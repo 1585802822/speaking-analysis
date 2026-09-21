@@ -1,0 +1,43 @@
+{
+  "open": {
+    "intake-summary": "User wants to replace local heavy models (ASR, voiceprint, emotion, pronunciation) with model API calls instead of running them locally.",
+    "completedChecks": [
+      "comet-state-created"
+    ],
+    "recordedAt": "2026-08-09T10:53:26.801Z"
+  },
+  "design": {
+    "design-summary": "Design finalized: replace local ASR and speaker embedding with a single Model API Gateway; keep emotion/pronunciation local for now because local prosody/pinyin already provide sufficient baseline value. Artifacts generated: docs/superpowers/specs/api-model-integration-design.md, docs/superpowers/specs/api-model-integration-architecture.html (showcase), openspec/changes/api-model-integration/specs/api-model-integration/spec.md.",
+    "user-confirmation": "User confirmed after plain-language explanation of why only ASR and embedding are API-ized and why emotion/pronunciation stay local.",
+    "completedChecks": [
+      "required-skill:design.archify",
+      "design-doc-created",
+      "delta-spec-created",
+      "architecture-diagram-delivered"
+    ],
+    "recordedAt": "2026-08-09T12:21:52.170Z"
+  },
+  "plan": {
+    "producer-summary": "Created implementation plan at docs/superpowers/plans/api-model-integration-plan.md and task contract at openspec/changes/api-model-integration/tasks.md. Plan covers ModelAPIClient, config extension, transcriber/embeddings refactoring, tests, end-to-end validation, and README updates.",
+    "completedChecks": [
+      "plan-artifact-created",
+      "task-contract-created"
+    ],
+    "recordedAt": "2026-08-09T12:22:57.626Z"
+  },
+  "execute": {
+    "implementation-summary": "完成模型 API Gateway 集成：新增 src/model_api_client.py 统一客户端；改造 src/transcriber.py 与 src/embeddings.py 优先调用 API，失败回退本地；更新 config.yaml、requirements.txt、README.md 与测试；情感和正音保持本地并预留 API 接口",
+    "test-evidence": "pytest tests/ 全部 39 项通过",
+    "recordedAt": "2026-08-09T12:45:15.767Z"
+  },
+  "verify": {
+    "verification-commands": "/c/Users/MI/.conda/envs/stata_env/python.exe -m pytest tests/ -v --tb=short",
+    "verification-result": "39 passed, 15 warnings in 10.39s; 修复了 embeddings 内部 import warnings 导致的 UnboundLocalError 与 transcriber 重型模型加载导致的测试挂起",
+    "recordedAt": "2026-08-09T12:45:41.084Z"
+  },
+  "archive": {
+    "archive-summary": "将 api-model-integration 变更归档：更新 openspec/design.md 与 delta spec 验收状态，标记 .comet.yaml archived: true",
+    "archived-state": "completed",
+    "recordedAt": "2026-08-09T12:46:54.149Z"
+  }
+}

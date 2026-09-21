@@ -1,0 +1,58 @@
+# 测试配置：启用 API + 并行处理（无真实 Gateway 时会回退到本地 tiny 模型）
+
+input_dir: "./input"
+output_dir: "./output_test_parallel"
+voiceprint_dir: "./voiceprint_test_parallel"
+audio_formats: [".mp3", ".wav", ".m4a", ".flac"]
+
+vad:
+  min_speech_duration_ms: 250
+  max_silence_duration_ms: 1000
+
+segmentation:
+  max_segment_duration_sec: 300
+  min_segment_duration_sec: 10
+  target_sample_rate: 16000
+  parallel_workers: 4  # 并行处理片段
+
+speaker:
+  enrollment_duration_sec: 45
+  similarity_threshold: 0.75
+  low_confidence_threshold: 0.55
+  positive_lr: 0.25
+  negative_lr: 0.15
+  embedding_model: "speechbrain/spkrec-ecapa-voxceleb"
+  embedding_model_cache: "./tmp/spkrec-ecapa-voxceleb"
+  pyannote_embedding_model: "pyannote/embedding"
+
+asr:
+  model: "tiny"       # 测试用轻量模型，加快处理速度
+  device: "auto"
+  compute_type: "int8"
+  language: "zh"
+  beam_size: 5
+  vad_filter: true
+
+analysis:
+  filler_words:
+    zh: ["嗯", "啊", "然后", "就是", "那个", "这个", "对吧", "所以", "那么"]
+    en: ["um", "uh", "like", "you know", "so", "actually", "basically", "well"]
+  max_sentence_words: 45
+  min_pause_sec: 0.3
+  max_pause_sec: 2.0
+  pronunciation:
+    low_confidence_threshold: 0.65
+    phoneme_check: true
+
+reporting:
+  formats: ["markdown", "json"]
+
+# Model API Gateway 配置（启用后优先使用 API，失败回退本地模型）
+api:
+  enabled: true
+  base_url: "https://your-ai-gateway.example.com"  # 请替换为真实 Gateway 地址
+  api_key_env: "AI_GATEWAY_API_KEY"
+  timeout: 120
+  endpoints:
+    asr: "/v1/audio/transcriptions"
+    embed: "/v1/audio/embeddings"

@@ -1,0 +1,25 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node .claude/skills/comet-classic/scripts/workflow-state.mjs record open \"intake-summary: User wants to enhance the audio preprocessing module with noise reduction and effective segment extraction before voiceprint recognition, aiming to minimize LLM token usage by processing only valid speech segments. completedChecks: comet-state-created\")",
+      "Bash(node .claude/skills/comet-classic/scripts/workflow-state.mjs status)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": []
+      },
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"D:/project/speaking-analysis/.claude/skills/comet/scripts/comet-hook-router.mjs\" --platform \"claude\" --project-root \"D:/project/speaking-analysis\""
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,808 @@
+{
+  "schemaVersion": 1,
+  "goal": "Create a project-specific comet-classic five-phase workflow Skill for building the daily speaking analysis tool, starting from the design Node.",
+  "skillCreatorIntent": "create-workflow",
+  "preferredSkills": [
+    "comet-open",
+    "comet-design",
+    "archify",
+    "comet-build",
+    "subagent-driven-development",
+    "requesting-code-review",
+    "comet-verify",
+    "comet-archive"
+  ],
+  "workflow": {
+    "kind": "comet-five-phase-overlay",
+    "name": "comet-classic",
+    "goal": "Guide the agent through open/design/build/verify/archive to build the speaking analysis tool.",
+    "nodes": {
+      "open": {
+        "responsibility": "Create a Classic change and confirm the problem statement and scope from the user's request.",
+        "outputSchema": {
+          "name": "classic-change-init",
+          "artifacts": [
+            ".comet.yaml",
+            "brief.md"
+          ]
+        },
+        "enforcement": "guarded"
+      },
+      "design": {
+        "responsibility": "Produce the architecture and implementation plan for the speaking analysis tool, using the clarified requirements from the Native brief as seed input.",
+        "outputSchema": {
+          "name": "design-spec",
+          "artifacts": [
+            "design.md",
+            "architecture.md"
+          ]
+        },
+        "requiredSkillCalls": [
+          {
+            "skill": "archify",
+            "scope": "design",
+            "reason": "Generate architecture diagrams for the speaking analysis pipeline."
+          }
+        ],
+        "enforcement": "guarded"
+      },
+      "plan": {
+        "responsibility": "Break design into concrete implementation tasks and acceptance criteria.",
+        "outputSchema": {
+          "name": "implementation-plan",
+          "artifacts": [
+            "plan.md"
+          ]
+        },
+        "enforcement": "guarded"
+      },
+      "execute": {
+        "responsibility": "Implement the code according to design and plan.",
+        "outputSchema": {
+          "name": "implementation",
+          "artifacts": [
+            "src/**",
+            "tests/**"
+          ]
+        },
+        "enforcement": "handoff-guarded"
+      },
+      "review": {
+        "responsibility": "Review implementation against design and acceptance criteria.",
+        "outputSchema": {
+          "name": "review-report",
+          "artifacts": [
+            "review.md"
+          ]
+        },
+        "enforcement": "advisory"
+      },
+      "verify": {
+        "responsibility": "Run validation and tests to prove the implementation works.",
+        "outputSchema": {
+          "name": "verification",
+          "artifacts": [
+            "verification.md"
+          ]
+        },
+        "enforcement": "guarded"
+      },
+      "archive": {
+        "responsibility": "Finalize the change and commit/merge if appropriate.",
+        "outputSchema": {
+          "name": "archive",
+          "artifacts": [
+            "archive.md"
+          ]
+        },
+        "enforcement": "guarded"
+      }
+    }
+  },
+  "workflowDefinition": {
+    "kind": "comet-five-phase-overlay",
+    "name": "comet-classic",
+    "goal": "Guide the agent through open/design/build/verify/archive to build the speaking analysis tool.",
+    "nodes": {
+      "open": {
+        "responsibility": "Create a Classic change and confirm the problem statement and scope from the user's request.",
+        "outputSchema": {
+          "name": "classic-change-init",
+          "artifacts": [
+            ".comet.yaml",
+            "brief.md"
+          ]
+        },
+        "enforcement": "guarded"
+      },
+      "design": {
+        "responsibility": "Produce the architecture and implementation plan for the speaking analysis tool, using the clarified requirements from the Native brief as seed input.",
+        "outputSchema": {
+          "name": "design-spec",
+          "artifacts": [
+            "design.md",
+            "architecture.md"
+          ]
+        },
+        "requiredSkillCalls": [
+          {
+            "skill": "archify",
+            "scope": "design",
+            "reason": "Generate architecture diagrams for the speaking analysis pipeline."
+          }
+        ],
+        "enforcement": "guarded"
+      },
+      "plan": {
+        "responsibility": "Break design into concrete implementation tasks and acceptance criteria.",
+        "outputSchema": {
+          "name": "implementation-plan",
+          "artifacts": [
+            "plan.md"
+          ]
+        },
+        "enforcement": "guarded"
+      },
+      "execute": {
+        "responsibility": "Implement the code according to design and plan.",
+        "outputSchema": {
+          "name": "implementation",
+          "artifacts": [
+            "src/**",
+            "tests/**"
+          ]
+        },
+        "enforcement": "handoff-guarded"
+      },
+      "review": {
+        "responsibility": "Review implementation against design and acceptance criteria.",
+        "outputSchema": {
+          "name": "review-report",
+          "artifacts": [
+            "review.md"
+          ]
+        },
+        "enforcement": "advisory"
+      },
+      "verify": {
+        "responsibility": "Run validation and tests to prove the implementation works.",
+        "outputSchema": {
+          "name": "verification",
+          "artifacts": [
+            "verification.md"
+          ]
+        },
+        "enforcement": "guarded"
+      },
+      "archive": {
+        "responsibility": "Finalize the change and commit/merge if appropriate.",
+        "outputSchema": {
+          "name": "archive",
+          "artifacts": [
+            "archive.md"
+          ]
+        },
+        "enforcement": "guarded"
+      }
+    }
+  },
+  "workflowProtocol": {
+    "schemaVersion": 1,
+    "kind": "comet-five-phase-overlay",
+    "name": "comet-classic",
+    "goal": "Guide the agent through open/design/build/verify/archive to build the speaking analysis tool.",
+    "nodes": [
+      {
+        "id": "open",
+        "label": "Open",
+        "kind": "control",
+        "responsibility": "Intake the user request, choose the change shape, and initialize Comet state.",
+        "implementation": {
+          "skill": "comet-open",
+          "operation": "default",
+          "scope": "main",
+          "enforcement": "guarded"
+        },
+        "operations": [
+          "require",
+          "augment"
+        ],
+        "outputSchemas": [
+          "comet.intake.v1"
+        ],
+        "guardrails": [
+          {
+            "id": "comet-state-created",
+            "label": ".comet.yaml exists",
+            "validation": "state-transition"
+          }
+        ],
+        "requiredSkillCalls": [],
+        "augmentations": [],
+        "satisfies": [],
+        "disabled": false
+      },
+      {
+        "id": "design",
+        "label": "Design",
+        "kind": "producer",
+        "responsibility": "Turn the confirmed request into design artifacts and OpenSpec delta context.",
+        "implementation": {
+          "skill": "comet-design",
+          "operation": "default",
+          "scope": "main",
+          "enforcement": "guarded"
+        },
+        "operations": [
+          "require",
+          "augment",
+          "override"
+        ],
+        "outputSchemas": [
+          "comet.design.v1"
+        ],
+        "guardrails": [
+          {
+            "id": "design-artifacts",
+            "label": "Design artifacts exist",
+            "validation": "artifact-structured"
+          }
+        ],
+        "requiredSkillCalls": [
+          {
+            "skill": "archify",
+            "operation": "require",
+            "scope": "design",
+            "enforcement": "guarded",
+            "reason": "Generate architecture diagrams for the speaking analysis pipeline."
+          }
+        ],
+        "augmentations": [],
+        "satisfies": [],
+        "disabled": false
+      },
+      {
+        "id": "plan",
+        "label": "Plan",
+        "kind": "producer",
+        "responsibility": "Create the executable implementation plan and task contract.",
+        "implementation": {
+          "skill": "comet-build",
+          "operation": "default",
+          "scope": "main",
+          "enforcement": "guarded"
+        },
+        "operations": [
+          "require",
+          "augment",
+          "override"
+        ],
+        "outputSchemas": [
+          "comet.plan.v1"
+        ],
+        "guardrails": [
+          {
+            "id": "plan-artifacts",
+            "label": "Plan artifacts exist",
+            "validation": "artifact-structured"
+          }
+        ],
+        "requiredSkillCalls": [],
+        "augmentations": [],
+        "satisfies": [],
+        "disabled": false
+      },
+      {
+        "id": "execute",
+        "label": "Execute",
+        "kind": "control",
+        "responsibility": "Apply the implementation plan through direct coordinator execution.",
+        "implementation": {
+          "skill": "comet-build",
+          "operation": "default",
+          "scope": "main",
+          "enforcement": "guarded"
+        },
+        "operations": [
+          "require",
+          "augment"
+        ],
+        "outputSchemas": [
+          "comet.execution-evidence.v1"
+        ],
+        "guardrails": [
+          {
+            "id": "build-complete",
+            "label": "Build evidence recorded",
+            "validation": "semantic"
+          }
+        ],
+        "requiredSkillCalls": [],
+        "augmentations": [],
+        "satisfies": [],
+        "disabled": false
+      },
+      {
+        "id": "subagent-execute",
+        "label": "Subagent Execute",
+        "kind": "handoff",
+        "responsibility": "Delegate implementation work and require auditable returned evidence.",
+        "implementation": {
+          "skill": "subagent-driven-development",
+          "operation": "default",
+          "scope": "handoff",
+          "enforcement": "handoff-guarded"
+        },
+        "operations": [
+          "require",
+          "augment"
+        ],
+        "outputSchemas": [
+          "comet.handoff.v1"
+        ],
+        "guardrails": [
+          {
+            "id": "handoff-evidence",
+            "label": "Handoff evidence recorded",
+            "validation": "evidence-only"
+          }
+        ],
+        "requiredSkillCalls": [],
+        "augmentations": [],
+        "satisfies": [],
+        "disabled": false
+      },
+      {
+        "id": "review",
+        "label": "Review",
+        "kind": "guardrail",
+        "responsibility": "Inspect the implementation with review Skills before verification.",
+        "optional": true,
+        "implementation": {
+          "skill": "requesting-code-review",
+          "operation": "default",
+          "scope": "review",
+          "enforcement": "guarded"
+        },
+        "operations": [
+          "require",
+          "augment",
+          "disable"
+        ],
+        "outputSchemas": [
+          "comet.review.v1"
+        ],
+        "guardrails": [
+          {
+            "id": "review-evidence",
+            "label": "Review evidence recorded",
+            "validation": "evidence-only"
+          }
+        ],
+        "requiredSkillCalls": [],
+        "augmentations": [],
+        "satisfies": [],
+        "disabled": false
+      },
+      {
+        "id": "verify",
+        "label": "Verify",
+        "kind": "control",
+        "responsibility": "Run verification, reconcile branch state, and decide whether completion is valid.",
+        "implementation": {
+          "skill": "comet-verify",
+          "operation": "default",
+          "scope": "main",
+          "enforcement": "guarded"
+        },
+        "operations": [
+          "require",
+          "augment"
+        ],
+        "outputSchemas": [
+          "comet.verify.v1"
+        ],
+        "guardrails": [
+          {
+            "id": "verify-result",
+            "label": "Verification result recorded",
+            "validation": "evidence-only"
+          }
+        ],
+        "requiredSkillCalls": [],
+        "augmentations": [],
+        "satisfies": [],
+        "disabled": false
+      },
+      {
+        "id": "archive",
+        "label": "Archive",
+        "kind": "control",
+        "responsibility": "Archive the OpenSpec change and sync completed deltas back to the main specs.",
+        "implementation": {
+          "skill": "comet-archive",
+          "operation": "default",
+          "scope": "main",
+          "enforcement": "guarded"
+        },
+        "operations": [
+          "require",
+          "augment"
+        ],
+        "outputSchemas": [
+          "comet.archive.v1"
+        ],
+        "guardrails": [
+          {
+            "id": "archive-state",
+            "label": "Archive state recorded",
+            "validation": "state-transition"
+          }
+        ],
+        "requiredSkillCalls": [],
+        "augmentations": [],
+        "satisfies": [],
+        "disabled": false
+      }
+    ],
+    "edges": [
+      {
+        "from": "open",
+        "to": "design",
+        "condition": "success"
+      },
+      {
+        "from": "open",
+        "to": "open",
+        "condition": "failure"
+      },
+      {
+        "from": "open",
+        "to": "open",
+        "condition": "pause"
+      },
+      {
+        "from": "design",
+        "to": "plan",
+        "condition": "success"
+      },
+      {
+        "from": "design",
+        "to": "design",
+        "condition": "failure"
+      },
+      {
+        "from": "design",
+        "to": "design",
+        "condition": "pause"
+      },
+      {
+        "from": "plan",
+        "to": "execute",
+        "condition": "success"
+      },
+      {
+        "from": "plan",
+        "to": "plan",
+        "condition": "failure"
+      },
+      {
+        "from": "plan",
+        "to": "plan",
+        "condition": "pause"
+      },
+      {
+        "from": "execute",
+        "to": "subagent-execute",
+        "condition": "success"
+      },
+      {
+        "from": "execute",
+        "to": "execute",
+        "condition": "failure"
+      },
+      {
+        "from": "execute",
+        "to": "execute",
+        "condition": "pause"
+      },
+      {
+        "from": "subagent-execute",
+        "to": "review",
+        "condition": "success"
+      },
+      {
+        "from": "subagent-execute",
+        "to": "subagent-execute",
+        "condition": "failure"
+      },
+      {
+        "from": "subagent-execute",
+        "to": "subagent-execute",
+        "condition": "pause"
+      },
+      {
+        "from": "review",
+        "to": "verify",
+        "condition": "success"
+      },
+      {
+        "from": "review",
+        "to": "review",
+        "condition": "failure"
+      },
+      {
+        "from": "review",
+        "to": "review",
+        "condition": "pause"
+      },
+      {
+        "from": "verify",
+        "to": "archive",
+        "condition": "success"
+      },
+      {
+        "from": "verify",
+        "to": "verify",
+        "condition": "failure"
+      },
+      {
+        "from": "verify",
+        "to": "verify",
+        "condition": "pause"
+      },
+      {
+        "from": "archive",
+        "to": null,
+        "condition": "success"
+      },
+      {
+        "from": "archive",
+        "to": "archive",
+        "condition": "failure"
+      },
+      {
+        "from": "archive",
+        "to": "archive",
+        "condition": "pause"
+      }
+    ],
+    "outputSchemas": [
+      {
+        "id": "comet.intake.v1",
+        "description": "Comet change intake and initial state.",
+        "artifacts": [
+          {
+            "id": "comet-state",
+            "kind": "state",
+            "required": true,
+            "paths": [
+              "changes/*/.comet.yaml"
+            ],
+            "pathBase": "classic-openspec-root",
+            "validations": [
+              "state-transition"
+            ]
+          }
+        ],
+        "evidence": [
+          {
+            "id": "intake-summary",
+            "required": true
+          }
+        ]
+      },
+      {
+        "id": "comet.design.v1",
+        "description": "Comet design artifacts and OpenSpec delta context.",
+        "artifacts": [
+          {
+            "id": "design-doc",
+            "kind": "file",
+            "required": true,
+            "paths": [
+              "specs/*.md"
+            ],
+            "pathBase": "classic-superpowers-root",
+            "validations": [
+              "artifact-exists",
+              "artifact-structured"
+            ]
+          },
+          {
+            "id": "delta-spec",
+            "kind": "file",
+            "required": true,
+            "paths": [
+              "changes/*/specs/*/spec.md"
+            ],
+            "pathBase": "classic-openspec-root",
+            "validations": [
+              "artifact-exists",
+              "artifact-structured"
+            ]
+          }
+        ],
+        "evidence": [
+          {
+            "id": "design-summary",
+            "required": true
+          },
+          {
+            "id": "user-confirmation",
+            "required": true
+          }
+        ]
+      },
+      {
+        "id": "comet.plan.v1",
+        "description": "Comet executable implementation plan.",
+        "artifacts": [
+          {
+            "id": "implementation-plan",
+            "kind": "file",
+            "required": true,
+            "paths": [
+              "plans/*.md"
+            ],
+            "pathBase": "classic-superpowers-root",
+            "validations": [
+              "artifact-exists",
+              "artifact-structured"
+            ]
+          },
+          {
+            "id": "openspec-tasks",
+            "kind": "file",
+            "required": false,
+            "paths": [
+              "changes/*/tasks.md"
+            ],
+            "pathBase": "classic-openspec-root",
+            "validations": [
+              "artifact-exists",
+              "artifact-structured"
+            ]
+          }
+        ],
+        "evidence": [
+          {
+            "id": "producer-summary",
+            "required": true
+          }
+        ]
+      },
+      {
+        "id": "comet.execution-evidence.v1",
+        "description": "Comet build execution evidence and task completion.",
+        "artifacts": [
+          {
+            "id": "task-state",
+            "kind": "file",
+            "required": true,
+            "paths": [
+              "changes/*/tasks.md"
+            ],
+            "pathBase": "classic-openspec-root",
+            "validations": [
+              "artifact-structured",
+              "semantic"
+            ]
+          }
+        ],
+        "evidence": [
+          {
+            "id": "implementation-summary",
+            "required": true
+          },
+          {
+            "id": "test-evidence",
+            "required": true
+          }
+        ]
+      },
+      {
+        "id": "comet.handoff.v1",
+        "description": "Subagent handoff request and returned evidence.",
+        "artifacts": [],
+        "evidence": [
+          {
+            "id": "handoff-request",
+            "required": true
+          },
+          {
+            "id": "handoff-result",
+            "required": true
+          }
+        ]
+      },
+      {
+        "id": "comet.review.v1",
+        "description": "Review or whitebox rule report.",
+        "artifacts": [],
+        "evidence": [
+          {
+            "id": "review-summary",
+            "required": true
+          },
+          {
+            "id": "review-blockers",
+            "required": false
+          }
+        ]
+      },
+      {
+        "id": "comet.verify.v1",
+        "description": "Comet verification evidence and branch handling.",
+        "artifacts": [],
+        "evidence": [
+          {
+            "id": "verification-commands",
+            "required": true
+          },
+          {
+            "id": "verification-result",
+            "required": true
+          }
+        ]
+      },
+      {
+        "id": "comet.archive.v1",
+        "description": "OpenSpec archive and delta sync result.",
+        "artifacts": [],
+        "evidence": [
+          {
+            "id": "archive-summary",
+            "required": true
+          },
+          {
+            "id": "archived-state",
+            "required": true
+          }
+        ]
+      }
+    ],
+    "state": {
+      "kind": "comet-overlay",
+      "statePath": "changes/*/.comet.yaml",
+      "pathBase": "classic-openspec-root",
+      "currentNodeField": "phase",
+      "completedNodesField": "completedNodes",
+      "evidenceField": "evidence"
+    },
+    "evals": [
+      {
+        "id": "comet-five-phase-contract",
+        "expectedNodeOrder": [
+          "open",
+          "design",
+          "plan",
+          "execute",
+          "subagent-execute",
+          "review",
+          "verify",
+          "archive"
+        ],
+        "requiredOutputSchemas": [
+          "comet.intake.v1",
+          "comet.design.v1",
+          "comet.plan.v1",
+          "comet.execution-evidence.v1",
+          "comet.handoff.v1",
+          "comet.review.v1",
+          "comet.verify.v1",
+          "comet.archive.v1"
+        ]
+      }
+    ]
+  },
+  "deviations": [],
+  "engineMode": "deterministic",
+  "runnerMode": "standalone",
+  "mode": "create",
+  "defaultLocale": "en",
+  "locales": [
+    "en"
+  ],
+  "engineEnabled": true
+}

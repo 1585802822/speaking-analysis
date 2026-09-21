@@ -1,0 +1,6 @@
+schema: comet.classic.v1
+name: api-model-integration
+phase: archive
+plan: docs/superpowers/plans/api-model-integration-plan.md
+archived: true
+created_at: 2026-08-09

@@ -1,0 +1,5 @@
+schema: comet.classic.v1
+name: real-data-validation
+phase: archive
+archived: true
+created_at: 2026-08-09

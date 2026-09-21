@@ -1,0 +1,15 @@
+allowedSkills:
+  - comet-classic
+  - comet-classic-open
+  - comet-classic-design
+  - comet-classic-plan
+  - comet-classic-execute
+  - comet-classic-subagent-execute
+  - comet-classic-review
+  - comet-classic-verify
+  - comet-classic-archive
+allowedAgents: []
+allowedTools: []
+maxIterations: 10
+maxRetriesPerAction: 2
+confirmationRequiredFor: []

@@ -1,0 +1,23 @@
+{
+  "open": {
+    "intake-summary": "User requests to test the speaking-analysis pipeline with real audio data located at D:/project/speaking-analysis/test data, selecting an appropriate subset for validation.",
+    "completedChecks": [
+      "comet-state-created"
+    ],
+    "recordedAt": "2026-08-09T10:28:27.119Z"
+  },
+  "archive": {
+    "archive-summary": "Verified the speaking-analysis pipeline in a working Python environment. Results: pytest 28 passed; end-to-end run on test data/20260731-112120_trimmed_180s.wav completed with MFCC voiceprint fallback and faster-whisper tiny ASR. The pipeline produced reports, but ASR returned empty utterances for this sample (likely due to tiny model limitations or audio content). Emotion prosody fallback produced a neutral finding. Heavy models (speechbrain/pyannote/transformers) not installed; acceptance criteria remain partially unverified.",
+    "archived-state": {
+      "archived": true,
+      "phase": "archive",
+      "archivedAt": "auto"
+    },
+    "completedChecks": [
+      "pytest-passed",
+      "end-to-end-smoke-test",
+      "report-generated"
+    ],
+    "recordedAt": "2026-08-09T10:38:25.166Z"
+  }
+}

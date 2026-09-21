@@ -1,0 +1,69 @@
+{
+  "schema_version": 1,
+  "diagram_type": "dataflow",
+  "meta": {
+    "title": "声纹嵌入与说话人分离数据流",
+    "subtitle": "注册路径（VAD 裁剪分块）与分离路径（滑动窗口比对）共享 ECAPA 嵌入",
+    "viewBox": [1120, 620],
+    "quality_profile": "showcase"
+  },
+  "stages": [
+    { "label": "输入" },
+    { "label": "预处理" },
+    { "label": "嵌入" },
+    { "label": "存储" },
+    { "label": "判定" }
+  ],
+  "nodes": [
+    { "id": "samples", "type": "frontend", "label": "声纹样本", "sublabel": "input/voiceprint/*.m4a", "stage": 0, "row": 0, "tag": "注册音频" },
+    { "id": "segments", "type": "frontend", "label": "增强片段", "sublabel": "enhanced/seg_*.wav", "stage": 0, "row": 3, "tag": "待分离" },
+    { "id": "loader", "type": "cloud", "label": "librosa 加载", "sublabel": "16kHz 单声道", "stage": 1, "row": 0, "tag": "统一入口" },
+    { "id": "windows", "type": "backend", "label": "滑动窗口", "sublabel": "3s / 1.5s 步进", "stage": 1, "row": 3, "tag": "二次切分" },
+    { "id": "vad", "type": "security", "label": "能量 VAD 裁剪", "sublabel": "跳过静音块", "stage": 2, "row": 0, "tag": "去污染" },
+    { "id": "ecapa", "type": "backend", "label": "ECAPA-TDNN", "sublabel": "speechbrain 192 维", "stage": 2, "row": 2, "tag": "共享模型" },
+    { "id": "center", "type": "database", "label": "声纹中心", "sublabel": "块均值 + L2 归一化", "stage": 3, "row": 0, "tag": "本地计算" },
+    { "id": "store", "type": "database", "label": "embedding.pkl", "sublabel": "+ meta.json", "stage": 3, "row": 1, "tag": "本地落盘" },
+    { "id": "compare", "type": "backend", "label": "余弦比对", "sublabel": "阈值 0.40 / 0.25", "stage": 4, "row": 1, "tag": "user/other" },
+    { "id": "export", "type": "backend", "label": "分离导出", "sublabel": "按标签切分音频", "stage": 4, "row": 3, "tag": "输出" }
+  ],
+  "flows": [
+    { "id": "enroll-load", "from": "samples", "to": "loader", "label": "注册音频", "classification": "注册路径", "variant": "emphasis" },
+    { "id": "seg-window", "from": "segments", "to": "windows", "label": "片段音频", "classification": "分离路径", "variant": "emphasis" },
+    { "id": "load-vad", "from": "loader", "to": "vad", "label": "整段音频", "classification": "注册路径" },
+    { "id": "vad-ecapa", "from": "vad", "to": "ecapa", "label": "有效语音块", "classification": "注册路径" },
+    { "id": "win-ecapa", "from": "windows", "to": "ecapa", "label": "窗口音频", "classification": "分离路径", "variant": "dashed" },
+    { "id": "ecapa-center", "from": "ecapa", "to": "center", "label": "块嵌入", "classification": "注册路径", "variant": "emphasis" },
+    { "id": "center-store", "from": "center", "to": "store", "label": "声纹落盘", "classification": "本地存储", "variant": "security" },
+    { "id": "store-compare", "from": "store", "to": "compare", "label": "声纹中心", "classification": "分离路径", "labelAt": [880, 210] },
+    { "id": "ecapa-compare", "from": "ecapa", "to": "compare", "label": "窗口嵌入", "classification": "分离路径", "variant": "dashed", "fromSide": "bottom", "toSide": "bottom", "via": [[530, 470], [860, 470], [860, 300]], "labelAt": [640, 452] },
+    { "id": "compare-export", "from": "compare", "to": "export", "label": "标签结果", "classification": "输出", "variant": "emphasis" }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "主数据路径",
+      "items": [
+        "注册路径：声纹样本经 VAD 裁剪分块后取嵌入均值，形成声纹中心",
+        "分离路径：增强片段滑窗嵌入与声纹中心余弦比对，按阈值标记",
+        "两条路径共享同一个 ECAPA 单例，嵌入空间一致"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "质量门限",
+      "items": [
+        "能量 VAD 拦截开头静音污染（实测污染后自相似 -0.06）",
+        "阈值 0.40/0.25 按 ECAPA 实测分布校准（同人 ≥0.48，静音 ≈0）",
+        "ECAPA 失败自动回退 pyannote → MFCC，链路不变"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "本地优先",
+      "items": [
+        "模型缓存 tmp/spkrec-ecapa-voxceleb，推理全本地",
+        "声纹数据仅存 embedding.pkl 与 meta.json，不上传云端"
+      ]
+    }
+  ]
+}

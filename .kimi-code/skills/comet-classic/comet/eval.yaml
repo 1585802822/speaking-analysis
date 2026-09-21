@@ -1,0 +1,155 @@
+apiVersion: comet.eval/v1alpha1
+kind: SkillEvalManifest
+metadata:
+  name: comet-classic
+  description: Use when the user wants the comet-classic managed workflow for
+    Create a project-specific comet-classic five-phase workflow Skill for
+    building the daily speaking analysis tool, starting from the design Node,
+    explicitly invokes /comet-classic, or persisted workflow state identifies
+    one unambiguous active run. Route through this entry Skill; do not invoke
+    its internal Node Skills directly.
+  draftHash: <current-bundle-hash>
+skill:
+  name: comet-classic
+  source: ..
+  profile: authoring-skill
+evaluation:
+  recommendedTasks:
+    - authoring-skill-smoke
+    - workflow-route-conformance
+    - workflow-overlay-contract
+    - comet-full-workflow
+    - comet-fix-median
+    - comet-refactor-counter
+    - comet-api-cache-ttl
+  baselineTreatments:
+    - CONTROL
+    - COMET_FULL_040_BETA
+  qualityGates:
+    minWeightedScore: 0.8
+    minPassAt1: 0.6
+    maxInstabilityGap: 0.4
+  requiredOutputSchemas:
+    - comet.intake.v1
+    - comet.design.v1
+    - comet.plan.v1
+    - comet.execution-evidence.v1
+    - comet.handoff.v1
+    - comet.review.v1
+    - comet.verify.v1
+    - comet.archive.v1
+  expectedEvidence:
+    - node: archive
+      check: output-schema:archive.comet.archive.v1.archive-summary
+      schema: comet.archive.v1
+      evidence: archive-summary
+    - node: archive
+      check: output-schema:archive.comet.archive.v1.archived-state
+      schema: comet.archive.v1
+      evidence: archived-state
+    - node: design
+      check: output-schema:design.comet.design.v1.design-summary
+      schema: comet.design.v1
+      evidence: design-summary
+    - node: design
+      check: output-schema:design.comet.design.v1.user-confirmation
+      schema: comet.design.v1
+      evidence: user-confirmation
+    - node: execute
+      check: output-schema:execute.comet.execution-evidence.v1.implementation-summary
+      schema: comet.execution-evidence.v1
+      evidence: implementation-summary
+    - node: execute
+      check: output-schema:execute.comet.execution-evidence.v1.test-evidence
+      schema: comet.execution-evidence.v1
+      evidence: test-evidence
+    - node: open
+      check: output-schema:open.comet.intake.v1.intake-summary
+      schema: comet.intake.v1
+      evidence: intake-summary
+    - node: plan
+      check: output-schema:plan.comet.plan.v1.producer-summary
+      schema: comet.plan.v1
+      evidence: producer-summary
+    - node: review
+      check: output-schema:review.comet.review.v1.review-summary
+      schema: comet.review.v1
+      evidence: review-summary
+    - node: subagent-execute
+      check: output-schema:subagent-execute.comet.handoff.v1.handoff-request
+      schema: comet.handoff.v1
+      evidence: handoff-request
+    - node: subagent-execute
+      check: output-schema:subagent-execute.comet.handoff.v1.handoff-result
+      schema: comet.handoff.v1
+      evidence: handoff-result
+    - node: verify
+      check: output-schema:verify.comet.verify.v1.verification-commands
+      schema: comet.verify.v1
+      evidence: verification-commands
+    - node: verify
+      check: output-schema:verify.comet.verify.v1.verification-result
+      schema: comet.verify.v1
+      evidence: verification-result
+    - node: design
+      check: required-skill:design.archify
+      enforcement: guarded
+  requiredSkills:
+    - comet-classic
+    - comet-classic-open
+    - comet-classic-design
+    - comet-classic-plan
+    - comet-classic-execute
+    - comet-classic-subagent-execute
+    - comet-classic-review
+    - comet-classic-verify
+    - comet-classic-archive
+  generatedNodeSkills:
+    - comet-classic-open
+    - comet-classic-design
+    - comet-classic-plan
+    - comet-classic-execute
+    - comet-classic-subagent-execute
+    - comet-classic-review
+    - comet-classic-verify
+    - comet-classic-archive
+  expectedArtifacts:
+    - node: open
+      schema: comet.intake.v1
+      artifact: comet-state
+      paths:
+        - changes/*/.comet.yaml
+    - node: design
+      schema: comet.design.v1
+      artifact: design-doc
+      paths:
+        - specs/*.md
+    - node: design
+      schema: comet.design.v1
+      artifact: delta-spec
+      paths:
+        - changes/*/specs/*/spec.md
+    - node: plan
+      schema: comet.plan.v1
+      artifact: implementation-plan
+      paths:
+        - plans/*.md
+    - node: execute
+      schema: comet.execution-evidence.v1
+      artifact: task-state
+      paths:
+        - changes/*/tasks.md
+  routeConformance:
+    task: workflow-route-conformance
+    expectedNodeOrder:
+      - open
+      - design
+      - plan
+      - execute
+      - subagent-execute
+      - review
+      - verify
+      - archive
+interaction:
+  mode: none
+  maxTurns: 8

@@ -1,0 +1,45 @@
+input_dir: "test data"
+output_dir: "output_test"
+voiceprint_dir: "voiceprint_test"
+audio_formats: [".wav"]
+
+vad:
+  min_speech_duration_ms: 250
+  max_silence_duration_ms: 1000
+
+segmentation:
+  max_segment_duration_sec: 300
+  min_segment_duration_sec: 10
+  target_sample_rate: 16000
+
+speaker:
+  enrollment_duration_sec: 45
+  similarity_threshold: 0.65
+  low_confidence_threshold: 0.45
+  positive_lr: 0.25
+  negative_lr: 0.15
+  embedding_model: "speechbrain/spkrec-ecapa-voxceleb"
+  embedding_model_cache: "./tmp/spkrec-ecapa-voxceleb"
+  pyannote_embedding_model: "pyannote/embedding"
+
+asr:
+  model: "tiny"
+  device: "cpu"
+  compute_type: "int8"
+  language: "zh"
+  beam_size: 5
+  vad_filter: true
+
+analysis:
+  filler_words:
+    zh: ["嗯", "啊", "然后", "就是", "那个", "这个", "对吧", "所以", "那么"]
+    en: ["um", "uh", "like", "you know", "so", "actually", "basically", "well"]
+  max_sentence_words: 45
+  min_pause_sec: 0.3
+  max_pause_sec: 2.0
+  pronunciation:
+    low_confidence_threshold: 0.65
+    phoneme_check: true
+
+reporting:
+  formats: ["markdown", "json"]

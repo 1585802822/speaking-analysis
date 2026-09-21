@@ -1,0 +1,97 @@
+apiVersion: comet/v1alpha1
+kind: SkillBundle
+metadata:
+  name: comet-classic
+  version: 1.0.0
+  description: Create a project-specific comet-classic five-phase workflow Skill
+    for building the daily speaking analysis tool, starting from the design
+    Node.
+  defaultLocale: en
+  locales:
+    - en
+skills:
+  - id: comet-classic
+    path: skills/comet-classic
+    visibility: entry
+  - id: comet-classic-open
+    path: skills/comet-classic-open
+    visibility: internal
+  - id: comet-classic-design
+    path: skills/comet-classic-design
+    visibility: internal
+  - id: comet-classic-plan
+    path: skills/comet-classic-plan
+    visibility: internal
+  - id: comet-classic-execute
+    path: skills/comet-classic-execute
+    visibility: internal
+  - id: comet-classic-subagent-execute
+    path: skills/comet-classic-subagent-execute
+    visibility: internal
+  - id: comet-classic-review
+    path: skills/comet-classic-review
+    visibility: internal
+  - id: comet-classic-verify
+    path: skills/comet-classic-verify
+    visibility: internal
+  - id: comet-classic-archive
+    path: skills/comet-classic-archive
+    visibility: internal
+resources:
+  rules:
+    - id: comet-classic-orchestration
+      path: rules/comet-classic-orchestration.md
+      mode: always
+      required: true
+  hooks:
+    - id: comet-classic-before-write-guard
+      path: hooks/comet-classic-before-write-guard.yaml
+    - id: comet-classic-before-tool-guard
+      path: hooks/comet-classic-before-tool-guard.yaml
+  references:
+    - skills/comet-classic/reference/resolved-skills.json
+    - skills/comet-classic/reference/workflow-protocol.json
+    - skills/comet-classic/reference/decision-points.md
+    - skills/comet-classic/reference/recovery.md
+    - skills/comet-classic/reference/authoring-lanes.json
+    - skills/comet-classic/reference/skill-review.md
+    - skills/comet-classic/reference/composition-report.md
+    - skills/comet-classic/reference/subagents/script-author.md
+  scripts:
+    - id: comet-plan
+      path: skills/comet-classic/scripts/comet-plan.mjs
+      sideEffect: write
+      runtime: node
+    - id: comet-check
+      path: skills/comet-classic/scripts/comet-check.mjs
+      sideEffect: read
+      runtime: node
+    - id: comet-hook-guard
+      path: skills/comet-classic/scripts/comet-hook-guard.mjs
+      sideEffect: read
+      runtime: node
+    - id: workflow-state
+      path: skills/comet-classic/scripts/workflow-state.mjs
+      sideEffect: write
+      runtime: node
+    - id: workflow-guard
+      path: skills/comet-classic/scripts/workflow-guard.mjs
+      sideEffect: read
+      runtime: node
+    - id: workflow-handoff
+      path: skills/comet-classic/scripts/workflow-handoff.mjs
+      sideEffect: read
+      runtime: node
+  assets: []
+  agents: []
+platforms:
+  requires:
+    - skills
+    - scripts
+    - rules
+    - hooks
+    - references
+  optional: []
+  overrides: []
+engine:
+  enabled: false

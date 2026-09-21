@@ -1,0 +1,80 @@
+# 日常录音分析工具配置
+
+input_dir: "./data/input"
+output_dir: "./data/output"
+voiceprint_dir: "./data/voiceprint"
+audio_formats: [".mp3", ".wav", ".m4a", ".flac"]
+
+preprocessing:
+  denoise:
+    backend: noisereduce  # noisereduce | rnnoise | spectral
+    noise_sample_sec: 0.1  # 仅 spectral 使用
+  vad:
+    backend: silero       # silero | energy
+    min_speech_duration_ms: 250
+    max_silence_duration_ms: 1000
+    threshold: 0.5        # silero 置信度阈值
+  segmentation:
+    target_sample_rate: 16000
+    min_segment_duration_sec: 10
+    max_segment_duration_sec: 300
+  speaker_filter:
+    enabled: true
+    # 阈值按 ECAPA-TDNN 实测分布校准(同人典型 0.48-0.7, 静音/异人≈0)
+    similarity_threshold: 0.40
+    low_confidence_threshold: 0.25
+
+speaker:
+  enrollment_duration_sec: 45
+  similarity_threshold: 0.40
+  low_confidence_threshold: 0.25
+  positive_lr: 0.25
+  negative_lr: 0.15
+  embedding_model: "speechbrain/spkrec-ecapa-voxceleb"
+  embedding_model_cache: "./tmp/spkrec-ecapa-voxceleb"
+  pyannote_embedding_model: "pyannote/embedding"
+  # 注册声纹时的分块与能量 VAD 参数
+  enroll_chunk_sec: 3.0
+  enroll_vad_energy_db: 40
+
+asr:
+  model: "large-v3"
+  device: "auto"
+  compute_type: "int8"
+  language: "zh"
+  beam_size: 5
+  vad_filter: true
+
+analysis:
+  filler_words:
+    zh: ["嗯", "啊", "然后", "就是", "那个", "这个", "对吧", "所以", "那么"]
+    en: ["um", "uh", "like", "you know", "so", "actually", "basically", "well"]
+  max_sentence_words: 45
+  min_pause_sec: 0.3
+  max_pause_sec: 2.0
+  pronunciation:
+    low_confidence_threshold: 0.65
+    phoneme_check: true
+
+reporting:
+  formats: ["markdown", "json"]
+
+# Model API Gateway 配置（默认禁用，使用本地模型）
+api:
+  enabled: false
+  provider: "gateway"  # gateway 统一网关 | iflytek 讯飞开放平台
+  base_url: "https://your-ai-gateway.example.com"
+  api_key_env: "AI_GATEWAY_API_KEY"
+  timeout: 120
+  # 讯飞开放平台配置
+  # provider 为 iflytek 时填写 app_id 与 api_secret
+  # mode=stream 时还需填写 api_key（APIKey）
+  iflytek:
+    mode: "long"  # long 录音文件转写（标准版） | stream 语音听写（流式版, 长音频自动切块）
+    app_id: ""
+    api_key: ""  # 仅 stream 模式需要（语音听写流式版 APIKey）
+    api_secret: ""
+    language: "cn"  # long: cn 中文, en 英文; stream: zh_cn 中文, en_us 英文
+  endpoints:
+    asr: "/v1/audio/transcriptions"
+    embed: "/v1/audio/embeddings"

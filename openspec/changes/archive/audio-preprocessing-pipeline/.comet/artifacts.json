@@ -1,0 +1,7 @@
+{
+  "openspec_proposal": "openspec/changes/audio-preprocessing-pipeline/proposal.md",
+  "openspec_design": "openspec/changes/audio-preprocessing-pipeline/design.md",
+  "openspec_tasks": "openspec/changes/audio-preprocessing-pipeline/tasks.md",
+  "handoff_context": "openspec/changes/audio-preprocessing-pipeline/.comet/handoff/design-context.json",
+  "handoff_markdown": "openspec/changes/audio-preprocessing-pipeline/.comet/handoff/design-context.md"
+}

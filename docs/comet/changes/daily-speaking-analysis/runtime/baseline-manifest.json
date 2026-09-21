@@ -1,0 +1,96 @@
+{
+  "schema": "comet.native.content-snapshot.v1",
+  "origin": "change-created",
+  "capture": {
+    "provider": "git"
+  },
+  "createdAt": "2026-08-08T13:51:29.202Z",
+  "complete": true,
+  "limits": {
+    "maxFiles": 10000,
+    "maxFileBytes": 268435456,
+    "maxTotalBytes": 268435456,
+    "maxManifestBytes": 1048576,
+    "maxDurationMs": 60000
+  },
+  "policy": {
+    "schema": "comet.native.snapshot-policy.v1",
+    "include": [
+      "**/*"
+    ],
+    "exclude": [
+      ".agents/skills/**",
+      ".amazonq/skills/**",
+      ".augment/skills/**",
+      ".bob/skills/**",
+      ".claude/skills/**",
+      ".cline/skills/**",
+      ".codebuddy/skills/**",
+      ".continue/skills/**",
+      ".cospec/skills/**",
+      ".crush/skills/**",
+      ".cursor/skills/**",
+      ".factory/skills/**",
+      ".forge/skills/**",
+      ".gemini/skills/**",
+      ".github/skills/**",
+      ".iflow/skills/**",
+      ".junie/skills/**",
+      ".kilocode/skills/**",
+      ".kimi-code/skills/**",
+      ".kiro/skills/**",
+      ".lingma/skills/**",
+      ".mimocode/skills/**",
+      ".opencode/skills/**",
+      ".pi/skills/**",
+      ".qoder/skills/**",
+      ".qwen/skills/**",
+      ".roo/skills/**",
+      ".trae-cn/skills/**",
+      ".trae/skills/**",
+      ".windsurf/skills/**",
+      ".zcode/skills/**"
+    ],
+    "hash": "1b4c47ee1cdc72323c591ca8b9c7a7a8c123dfe64880b6c65dc768e2bb965385"
+  },
+  "entries": [
+    {
+      "path": ".claude/rules/comet-workflow-guard.md",
+      "hash": "0229fa25d312945e85ae5e8c5b292da7c34d9fbda1134e7c5e2953e6abe3fbc7",
+      "size": 3089,
+      "type": "file"
+    },
+    {
+      "path": ".claude/settings.local.json",
+      "hash": "a25e06907b26d3c242f13814f025abc469ae4e599439ac3ba33ceb75ca9caf2e",
+      "size": 434,
+      "type": "file"
+    },
+    {
+      "path": ".github/hooks/comet-guard.json",
+      "hash": "f01d19c737734ee0f918baa1b350f9797444220d8d38b088a7813881c8063b7d",
+      "size": 521,
+      "type": "file"
+    },
+    {
+      "path": ".github/instructions/comet-workflow-guard.instructions.md",
+      "hash": "1c23e5c80d60a7de8feb12cf96b837a92f1dd34011b54d3d3c2eff7d805ed2f0",
+      "size": 3112,
+      "type": "file"
+    },
+    {
+      "path": "AGENTS.md",
+      "hash": "6f4e4de2c3ca7d2cb7c01965dd4ccae2e849204ed06b67ec4ec40335d7857c87",
+      "size": 1595,
+      "type": "file"
+    },
+    {
+      "path": "CLAUDE.md",
+      "hash": "6f4e4de2c3ca7d2cb7c01965dd4ccae2e849204ed06b67ec4ec40335d7857c87",
+      "size": 1595,
+      "type": "file"
+    }
+  ],
+  "omitted": [],
+  "omittedCount": 0
+}

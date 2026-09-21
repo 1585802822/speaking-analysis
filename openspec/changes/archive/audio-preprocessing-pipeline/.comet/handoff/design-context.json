@@ -1,0 +1,13 @@
+{
+  "change": "audio-preprocessing-pipeline",
+  "phase": "design",
+  "mode": "full",
+  "canonical_spec": "openspec",
+  "generated_by": "comet-handoff.sh",
+  "context_hash": "6a6feb315de2efbe10e18d45a9c21c2723217326ee6d91453d650745b324a002",
+  "files": [
+    { "path": "openspec/changes/audio-preprocessing-pipeline/proposal.md", "sha256": "2c304ad8516e790cdae14614f8c630d943f42250f69be1846b7a324ed80f9d27" },
+    { "path": "openspec/changes/audio-preprocessing-pipeline/design.md", "sha256": "d5167792b2578f1280f01293e4a339d3f37c955f3b494f07d859eea177ef4ff8" },
+    { "path": "openspec/changes/audio-preprocessing-pipeline/tasks.md", "sha256": "fccba32b1dbdcbf508096ff46929d648181f24ab844099a730197fbc178139ef" }
+  ]
+}

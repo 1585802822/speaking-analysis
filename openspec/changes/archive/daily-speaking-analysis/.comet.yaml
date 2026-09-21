@@ -1,0 +1,9 @@
+schema: comet.classic.v1
+name: daily-speaking-analysis
+phase: archive
+plan: docs/superpowers/plans/plan.md
+build_mode: subagent-driven-development
+subagent_dispatch: confirmed
+review_mode: standard
+archived: true
+created_at: 2026-08-09

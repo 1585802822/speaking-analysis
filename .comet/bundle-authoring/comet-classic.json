@@ -1,0 +1,1246 @@
+{
+  "schemaVersion": 1,
+  "name": "comet-classic",
+  "mode": "create",
+  "status": "draft",
+  "draftPath": "./.comet/bundle-drafts/comet-classic",
+  "currentHash": "a7e0caf33f26544dd86d540ea06618f7402d77f954691c570adc95efc4762036",
+  "candidates": [
+    {
+      "name": "comet-open",
+      "preferenceIndex": 0,
+      "platform": "builtin",
+      "scope": "builtin",
+      "origin": "builtin",
+      "factory": {
+        "query": "comet-open"
+      },
+      "root": "./.comet/__bundle_builtin__/comet-open",
+      "description": "Built-in Comet workflow step: comet-open.",
+      "skillMd": "# comet-open\n",
+      "references": [],
+      "scripts": [],
+      "hash": "builtin:comet-open"
+    },
+    {
+      "name": "comet-design",
+      "preferenceIndex": 1,
+      "platform": "builtin",
+      "scope": "builtin",
+      "origin": "builtin",
+      "factory": {
+        "query": "comet-design"
+      },
+      "root": "./.comet/__bundle_builtin__/comet-design",
+      "description": "Built-in Comet workflow step: comet-design.",
+      "skillMd": "# comet-design\n",
+      "references": [],
+      "scripts": [],
+      "hash": "builtin:comet-design"
+    },
+    {
+      "name": "archify",
+      "preferenceIndex": 2,
+      "platform": "codex",
+      "scope": "global",
+      "origin": "global",
+      "factory": {
+        "query": "archify"
+      },
+      "root": "C:\\Users\\MI\\.agents\\skills\\archify",
+      "description": "Create polished, validated architecture, workflow, sequence, data-flow, and lifecycle/state diagrams as explorable standalone HTML with inline SVG, dark/light themes, optional trace motion, and PNG/JPEG/WebP/SVG/WebM export. Accept plain-language requirements or pasted Mermaid flowchart, sequenceDiagram, and stateDiagram input; inspect repository evidence when the diagram must reflect real code. Use when the user asks to visualize system architecture, infrastructure, cloud/security/network topology, technical workflows, API call sequences, request lifecycles, data pipelines, ETL/ELT, data lineage, state machines, or to convert/beautify Mermaid.",
+      "skillMd": "---\r\nname: archify\r\ndescription: Create polished, validated architecture, workflow, sequence, data-flow, and lifecycle/state diagrams as explorable standalone HTML with inline SVG, dark/light themes, optional trace motion, and PNG/JPEG/WebP/SVG/WebM export. Accept plain-language requirements or pasted Mermaid flowchart, sequenceDiagram, and stateDiagram input; inspect repository evidence when the diagram must reflect real code. Use when the user asks to visualize system architecture, infrastructure, cloud/security/network topology, technical workflows, API call sequences, request lifecycles, data pipelines, ETL/ELT, data lineage, state machines, or to convert/beautify Mermaid.\r\nlicense: MIT\r\nmetadata:\r\n  version: \"2.13\"\r\n  author: tt-a1i\r\n  based_on: Cocoon-AI/architecture-diagram-generator (MIT, v1.0)\r\n---\r\n\r\n# Archify\r\n\r\nCreate a self-contained, interactive HTML diagram from a small typed JSON specification. Static output is the default; enable motion only when the user asks for a demo or presentation.\r\n\r\n## Fast authoring path\r\n\r\nUse this bounded path for ordinary generation. Do not read the optional Viewer Runtime reference unless the user asks about those features.\r\n\r\n1. Choose `architecture`, `workflow`, `sequence`, `dataflow`, or `lifecycle` from the question.\r\n2. Read one matching schema in `schemas/`, `schemas/common.schema.json`, and one matching JSON example in `examples/`. Read only those files. Fresh authorship means new stable IDs, domain wording, and layout; use the example for field shape, not facts.\r\n3. Artifact first: the next tool action must write the candidate. Write the candidate before inspecting renderer internals. Do not plan exact coordinates in prose. Start with one clear main path, short side branches, sparse labels, and at most 12 primary nodes. Set `meta.quality_profile` to `\"showcase\"` unless the user explicitly requests a dense `standard` map. Start with automatic routes and labels. Do not add `via`, `channelX`, `channelY`, or `labelAt` before a diagnostic calls for one; apply at most one diagnosed geometry control per repair.\r\n4. Validate after every candidate edit and immediately before handoff:\r\n\r\n   ```bash\r\n   node bin/archify.mjs validate <type> <candidate.json> --quality showcase --json\r\n   ```\r\n\r\n   A receipt with only 4 artifact checks is basic validation, never showcase acceptance. A showcase pass must report all 9 artifact checks with 0 composition errors and 0 warnings. If the candidate omits or misspells the exact `meta.quality_profile` field, fix it before geometry. A passing final validation freezes the candidate: never edit it afterward.\r\n5. For a delivered HTML, `deliver` is the final acceptance command:\r\n\r\n   ```bash\r\n   node bin/archify.mjs deliver <type> <candidate.json> <output.html> --quality showcase --json\r\n   ```\r\n\r\n   A non-zero exit can never be described as success. If validation fails, change only the diagnosed `subject`, verify `evidence`, choose from `supportedFixes`, and rerun. Continue focused correction while the objective error count reaches a new minimum. If two consecutive rounds do not improve that best count, stop and report the unresolved diagnostics truthfully.\r\n\r\nDo not read `renderers/shared/geometry.mjs`, renderer source, validator source, tests, or benchmarks before the first candidate. Inspect implementation only for an unsupported internal diagnostic or after two focused repairs fail.\r\n\r\nLifecycle note: phase columns `0..4` occupy the main rail; event/outcome columns `0..2` align beneath later phases. A recoverable state uses `type: \"failure\"` plus a real transition back to the active state.\r\n\r\n## Type router\r\n\r\n| Type | Use for |\r\n|---|---|\r\n| `architecture` | Components, services, cloud/security boundaries, infrastructure |\r\n| `workflow` | Processes, approval gates, tool calls, runbooks, CI/CD |\r\n| `sequence` | API call chains, request lifecycles, async traces, returns |\r\n| `dataflow` | Pipelines, ETL/ELT, lineage, governance, consumers |\r\n| `lifecycle` | State/status transitions, retries, waiting and terminal states |\r\n\r\nWhen ambiguous, run `node bin/archify.mjs guide \"<scenario>\" --json`. Scenario proof examples are structural references, not facts to copy.\r\n\r\n## Mermaid input\r\n\r\nRead Mermaid for topology and meaning, then author fresh Archify JSON; do not mechanically render Mermaid styling.\r\n\r\n- `flowchart` / `graph` → `workflow`, or `architecture` for a component map.\r\n- `sequenceDiagram` → `sequence`; participants become semantic participants and arrows become messages.\r\n- `stateDiagram` → `lifecycle`; states and transitions retain meaning, not Mermaid style.\r\n\r\n## Authoring invariants\r\n\r\n- One obvious main path; side branches leave the nearest main-path node. Remove low-value edges before adding routing controls.\r\n- Omit `meta.legend` for the truthful `auto` default. When needed, use only `mode: auto|all|hidden` and renderer-supported `entries.<kind>.label|visible`; labels never change semantics.\r\n- Component types are `frontend`, `backend`, `database`, `cloud`, `security`, `messagebus`, and `external`; variants are `default`, `emphasis`, `security`, and `dashed`.\r\n- Spacing means clear gap, not center distance. For a relationship label, clear gap must exceed its measured mask width; otherwise omit the label or move it deliberately.\r\n- Automatic routes own their endpoint sides. A side is a direction contract: the first and final segment must leave/enter perpendicular to that side.\r\n- Automatic Port Spread is a default renderer behavior for architecture, workflow, data-flow, and lifecycle. It skips single relationships and explicit `via`, `channelX`, `channelY`, `labelAt`, or non-`auto` routes. Near parallel ports use an outside bridge so automatic routing cannot create a sub-8px segment or sub-16px interior turn.\r\n- Never accept an edge crossing an unrelated opaque node, an ambiguous shared corridor, or a relationship label masking another route.\r\n\r\nRead `references/authoring-contract.md` only when you need field enums, spacing math, geometry repair rules, repository evidence, or mode-specific placement.\r\n\r\n## Delivery\r\n\r\nUse `validate` during repair and `deliver` once for final acceptance. Delivery freezes the exact specification bytes into a private same-directory snapshot, renders and checks that snapshot, atomically commits the HTML, and reports SHA-256 plus byte counts for both specification and artifact.\r\n\r\nAdd `--open` only when the user wants an immediate local preview. For an active desktop authoring loop, the optional command is:\r\n\r\n```bash\r\nnode bin/archify.mjs preview <type> <input>.json <output>.html --quality showcase\r\n```\r\n\r\nNever start preview by default. Read `references/delivery-contract.md` when using preview, repository evidence, export receipts, visual review, or post-commit opening.\r\n\r\n## Optional viewer capabilities\r\n\r\nGenerated HTML already contains theme switching, pan/zoom, search, focus, relationship tracing, semantic views, presentation, and truthful exports. These are reader capabilities, not extra authoring work. `meta.animation: \"trace\"` is opt-in; `meta.views` is optional and should contain at most five curated chapters.\r\n\r\nRead `references/viewer-runtime.md` only when the user explicitly asks for Share Cards, Route/Reach cards, motion, guided stories, deep links, presentation, search/focus, or another Viewer Runtime feature.\r\n\r\n## Setup and fallback\r\n\r\nNo install is required inside the skill package. Verify with:\r\n\r\n```bash\r\nnode bin/archify.mjs doctor\r\nnode bin/archify.mjs demo <output-directory>\r\n```\r\n\r\nWhen shell access is unavailable, hand-place architecture SVG into `assets/template.html`, use CSS semantic classes rather than inline colors, and follow the visual review contract in `references/delivery-contract.md`.\r\n\r\n## Output\r\n\r\nReturn the checked HTML path, diagram type, validation summary, specification/artifact receipt, and truthful visual-review status. Do not claim success for a non-zero command or claim visual inspection you did not perform.\r\n",
+      "references": [],
+      "scripts": [
+        {
+          "path": "scripts/check-render-output.mjs",
+          "sideEffect": "unknown"
+        },
+        {
+          "path": "scripts/generate-validators.mjs",
+          "sideEffect": "unknown"
+        },
+        {
+          "path": "scripts/render-examples.mjs",
+          "sideEffect": "unknown"
+        }
+      ],
+      "hash": "5e891a891d3bd3dfde5dac3f652a39bc15709e01060708b89e79e33f1221184c"
+    },
+    {
+      "name": "comet-build",
+      "preferenceIndex": 3,
+      "platform": "builtin",
+      "scope": "builtin",
+      "origin": "builtin",
+      "factory": {
+        "query": "comet-build"
+      },
+      "root": "./.comet/__bundle_builtin__/comet-build",
+      "description": "Built-in Comet workflow step: comet-build.",
+      "skillMd": "# comet-build\n",
+      "references": [],
+      "scripts": [],
+      "hash": "builtin:comet-build"
+    },
+    {
+      "name": "subagent-driven-development",
+      "preferenceIndex": 4,
+      "platform": "builtin",
+      "scope": "builtin",
+      "origin": "builtin",
+      "factory": {
+        "query": "subagent-driven-development"
+      },
+      "root": "./.comet/__bundle_builtin__/subagent-driven-development",
+      "description": "Built-in Comet workflow step: subagent-driven-development.",
+      "skillMd": "# subagent-driven-development\n",
+      "references": [],
+      "scripts": [],
+      "hash": "builtin:subagent-driven-development"
+    },
+    {
+      "name": "requesting-code-review",
+      "preferenceIndex": 5,
+      "platform": "builtin",
+      "scope": "builtin",
+      "origin": "builtin",
+      "factory": {
+        "query": "requesting-code-review"
+      },
+      "root": "./.comet/__bundle_builtin__/requesting-code-review",
+      "description": "Built-in Comet workflow step: requesting-code-review.",
+      "skillMd": "# requesting-code-review\n",
+      "references": [],
+      "scripts": [],
+      "hash": "builtin:requesting-code-review"
+    },
+    {
+      "name": "comet-verify",
+      "preferenceIndex": 6,
+      "platform": "builtin",
+      "scope": "builtin",
+      "origin": "builtin",
+      "factory": {
+        "query": "comet-verify"
+      },
+      "root": "./.comet/__bundle_builtin__/comet-verify",
+      "description": "Built-in Comet workflow step: comet-verify.",
+      "skillMd": "# comet-verify\n",
+      "references": [],
+      "scripts": [],
+      "hash": "builtin:comet-verify"
+    },
+    {
+      "name": "comet-archive",
+      "preferenceIndex": 7,
+      "platform": "builtin",
+      "scope": "builtin",
+      "origin": "builtin",
+      "factory": {
+        "query": "comet-archive"
+      },
+      "root": "./.comet/__bundle_builtin__/comet-archive",
+      "description": "Built-in Comet workflow step: comet-archive.",
+      "skillMd": "# comet-archive\n",
+      "references": [],
+      "scripts": [],
+      "hash": "builtin:comet-archive"
+    }
+  ],
+  "defaultLocale": "en",
+  "locales": [
+    "en"
+  ],
+  "engineEnabled": true,
+  "factory": {
+    "goal": "Create a project-specific comet-classic five-phase workflow Skill for building the daily speaking analysis tool, starting from the design Node.",
+    "preferredSkills": [
+      "comet-open",
+      "comet-design",
+      "archify",
+      "comet-build",
+      "subagent-driven-development",
+      "requesting-code-review",
+      "comet-verify",
+      "comet-archive"
+    ],
+    "requiredSkills": [],
+    "skillCreatorIntent": "create-workflow",
+    "workflowDefinition": {
+      "kind": "comet-five-phase-overlay",
+      "name": "comet-classic",
+      "goal": "Guide the agent through open/design/build/verify/archive to build the speaking analysis tool.",
+      "nodes": {
+        "open": {
+          "responsibility": "Create a Classic change and confirm the problem statement and scope from the user's request.",
+          "outputSchema": {
+            "name": "classic-change-init",
+            "artifacts": [
+              ".comet.yaml",
+              "brief.md"
+            ]
+          },
+          "enforcement": "guarded"
+        },
+        "design": {
+          "responsibility": "Produce the architecture and implementation plan for the speaking analysis tool, using the clarified requirements from the Native brief as seed input.",
+          "outputSchema": {
+            "name": "design-spec",
+            "artifacts": [
+              "design.md",
+              "architecture.md"
+            ]
+          },
+          "requiredSkillCalls": [
+            {
+              "skill": "archify",
+              "scope": "design",
+              "reason": "Generate architecture diagrams for the speaking analysis pipeline."
+            }
+          ],
+          "enforcement": "guarded"
+        },
+        "plan": {
+          "responsibility": "Break design into concrete implementation tasks and acceptance criteria.",
+          "outputSchema": {
+            "name": "implementation-plan",
+            "artifacts": [
+              "plan.md"
+            ]
+          },
+          "enforcement": "guarded"
+        },
+        "execute": {
+          "responsibility": "Implement the code according to design and plan.",
+          "outputSchema": {
+            "name": "implementation",
+            "artifacts": [
+              "src/**",
+              "tests/**"
+            ]
+          },
+          "enforcement": "handoff-guarded"
+        },
+        "review": {
+          "responsibility": "Review implementation against design and acceptance criteria.",
+          "outputSchema": {
+            "name": "review-report",
+            "artifacts": [
+              "review.md"
+            ]
+          },
+          "enforcement": "advisory"
+        },
+        "verify": {
+          "responsibility": "Run validation and tests to prove the implementation works.",
+          "outputSchema": {
+            "name": "verification",
+            "artifacts": [
+              "verification.md"
+            ]
+          },
+          "enforcement": "guarded"
+        },
+        "archive": {
+          "responsibility": "Finalize the change and commit/merge if appropriate.",
+          "outputSchema": {
+            "name": "archive",
+            "artifacts": [
+              "archive.md"
+            ]
+          },
+          "enforcement": "guarded"
+        }
+      }
+    },
+    "workflowProtocol": {
+      "schemaVersion": 1,
+      "kind": "comet-five-phase-overlay",
+      "name": "comet-classic",
+      "goal": "Guide the agent through open/design/build/verify/archive to build the speaking analysis tool.",
+      "nodes": [
+        {
+          "id": "open",
+          "label": "Open",
+          "kind": "control",
+          "responsibility": "Intake the user request, choose the change shape, and initialize Comet state.",
+          "implementation": {
+            "skill": "comet-open",
+            "operation": "default",
+            "scope": "main",
+            "enforcement": "guarded"
+          },
+          "operations": [
+            "require",
+            "augment"
+          ],
+          "outputSchemas": [
+            "comet.intake.v1"
+          ],
+          "guardrails": [
+            {
+              "id": "comet-state-created",
+              "label": ".comet.yaml exists",
+              "validation": "state-transition"
+            }
+          ],
+          "requiredSkillCalls": [],
+          "augmentations": [],
+          "satisfies": [],
+          "disabled": false
+        },
+        {
+          "id": "design",
+          "label": "Design",
+          "kind": "producer",
+          "responsibility": "Turn the confirmed request into design artifacts and OpenSpec delta context.",
+          "implementation": {
+            "skill": "comet-design",
+            "operation": "default",
+            "scope": "main",
+            "enforcement": "guarded"
+          },
+          "operations": [
+            "require",
+            "augment",
+            "override"
+          ],
+          "outputSchemas": [
+            "comet.design.v1"
+          ],
+          "guardrails": [
+            {
+              "id": "design-artifacts",
+              "label": "Design artifacts exist",
+              "validation": "artifact-structured"
+            }
+          ],
+          "requiredSkillCalls": [
+            {
+              "skill": "archify",
+              "operation": "require",
+              "scope": "design",
+              "enforcement": "guarded",
+              "reason": "Generate architecture diagrams for the speaking analysis pipeline."
+            }
+          ],
+          "augmentations": [],
+          "satisfies": [],
+          "disabled": false
+        },
+        {
+          "id": "plan",
+          "label": "Plan",
+          "kind": "producer",
+          "responsibility": "Create the executable implementation plan and task contract.",
+          "implementation": {
+            "skill": "comet-build",
+            "operation": "default",
+            "scope": "main",
+            "enforcement": "guarded"
+          },
+          "operations": [
+            "require",
+            "augment",
+            "override"
+          ],
+          "outputSchemas": [
+            "comet.plan.v1"
+          ],
+          "guardrails": [
+            {
+              "id": "plan-artifacts",
+              "label": "Plan artifacts exist",
+              "validation": "artifact-structured"
+            }
+          ],
+          "requiredSkillCalls": [],
+          "augmentations": [],
+          "satisfies": [],
+          "disabled": false
+        },
+        {
+          "id": "execute",
+          "label": "Execute",
+          "kind": "control",
+          "responsibility": "Apply the implementation plan through direct coordinator execution.",
+          "implementation": {
+            "skill": "comet-build",
+            "operation": "default",
+            "scope": "main",
+            "enforcement": "guarded"
+          },
+          "operations": [
+            "require",
+            "augment"
+          ],
+          "outputSchemas": [
+            "comet.execution-evidence.v1"
+          ],
+          "guardrails": [
+            {
+              "id": "build-complete",
+              "label": "Build evidence recorded",
+              "validation": "semantic"
+            }
+          ],
+          "requiredSkillCalls": [],
+          "augmentations": [],
+          "satisfies": [],
+          "disabled": false
+        },
+        {
+          "id": "subagent-execute",
+          "label": "Subagent Execute",
+          "kind": "handoff",
+          "responsibility": "Delegate implementation work and require auditable returned evidence.",
+          "implementation": {
+            "skill": "subagent-driven-development",
+            "operation": "default",
+            "scope": "handoff",
+            "enforcement": "handoff-guarded"
+          },
+          "operations": [
+            "require",
+            "augment"
+          ],
+          "outputSchemas": [
+            "comet.handoff.v1"
+          ],
+          "guardrails": [
+            {
+              "id": "handoff-evidence",
+              "label": "Handoff evidence recorded",
+              "validation": "evidence-only"
+            }
+          ],
+          "requiredSkillCalls": [],
+          "augmentations": [],
+          "satisfies": [],
+          "disabled": false
+        },
+        {
+          "id": "review",
+          "label": "Review",
+          "kind": "guardrail",
+          "responsibility": "Inspect the implementation with review Skills before verification.",
+          "optional": true,
+          "implementation": {
+            "skill": "requesting-code-review",
+            "operation": "default",
+            "scope": "review",
+            "enforcement": "guarded"
+          },
+          "operations": [
+            "require",
+            "augment",
+            "disable"
+          ],
+          "outputSchemas": [
+            "comet.review.v1"
+          ],
+          "guardrails": [
+            {
+              "id": "review-evidence",
+              "label": "Review evidence recorded",
+              "validation": "evidence-only"
+            }
+          ],
+          "requiredSkillCalls": [],
+          "augmentations": [],
+          "satisfies": [],
+          "disabled": false
+        },
+        {
+          "id": "verify",
+          "label": "Verify",
+          "kind": "control",
+          "responsibility": "Run verification, reconcile branch state, and decide whether completion is valid.",
+          "implementation": {
+            "skill": "comet-verify",
+            "operation": "default",
+            "scope": "main",
+            "enforcement": "guarded"
+          },
+          "operations": [
+            "require",
+            "augment"
+          ],
+          "outputSchemas": [
+            "comet.verify.v1"
+          ],
+          "guardrails": [
+            {
+              "id": "verify-result",
+              "label": "Verification result recorded",
+              "validation": "evidence-only"
+            }
+          ],
+          "requiredSkillCalls": [],
+          "augmentations": [],
+          "satisfies": [],
+          "disabled": false
+        },
+        {
+          "id": "archive",
+          "label": "Archive",
+          "kind": "control",
+          "responsibility": "Archive the OpenSpec change and sync completed deltas back to the main specs.",
+          "implementation": {
+            "skill": "comet-archive",
+            "operation": "default",
+            "scope": "main",
+            "enforcement": "guarded"
+          },
+          "operations": [
+            "require",
+            "augment"
+          ],
+          "outputSchemas": [
+            "comet.archive.v1"
+          ],
+          "guardrails": [
+            {
+              "id": "archive-state",
+              "label": "Archive state recorded",
+              "validation": "state-transition"
+            }
+          ],
+          "requiredSkillCalls": [],
+          "augmentations": [],
+          "satisfies": [],
+          "disabled": false
+        }
+      ],
+      "edges": [
+        {
+          "from": "open",
+          "to": "design",
+          "condition": "success"
+        },
+        {
+          "from": "open",
+          "to": "open",
+          "condition": "failure"
+        },
+        {
+          "from": "open",
+          "to": "open",
+          "condition": "pause"
+        },
+        {
+          "from": "design",
+          "to": "plan",
+          "condition": "success"
+        },
+        {
+          "from": "design",
+          "to": "design",
+          "condition": "failure"
+        },
+        {
+          "from": "design",
+          "to": "design",
+          "condition": "pause"
+        },
+        {
+          "from": "plan",
+          "to": "execute",
+          "condition": "success"
+        },
+        {
+          "from": "plan",
+          "to": "plan",
+          "condition": "failure"
+        },
+        {
+          "from": "plan",
+          "to": "plan",
+          "condition": "pause"
+        },
+        {
+          "from": "execute",
+          "to": "subagent-execute",
+          "condition": "success"
+        },
+        {
+          "from": "execute",
+          "to": "execute",
+          "condition": "failure"
+        },
+        {
+          "from": "execute",
+          "to": "execute",
+          "condition": "pause"
+        },
+        {
+          "from": "subagent-execute",
+          "to": "review",
+          "condition": "success"
+        },
+        {
+          "from": "subagent-execute",
+          "to": "subagent-execute",
+          "condition": "failure"
+        },
+        {
+          "from": "subagent-execute",
+          "to": "subagent-execute",
+          "condition": "pause"
+        },
+        {
+          "from": "review",
+          "to": "verify",
+          "condition": "success"
+        },
+        {
+          "from": "review",
+          "to": "review",
+          "condition": "failure"
+        },
+        {
+          "from": "review",
+          "to": "review",
+          "condition": "pause"
+        },
+        {
+          "from": "verify",
+          "to": "archive",
+          "condition": "success"
+        },
+        {
+          "from": "verify",
+          "to": "verify",
+          "condition": "failure"
+        },
+        {
+          "from": "verify",
+          "to": "verify",
+          "condition": "pause"
+        },
+        {
+          "from": "archive",
+          "to": null,
+          "condition": "success"
+        },
+        {
+          "from": "archive",
+          "to": "archive",
+          "condition": "failure"
+        },
+        {
+          "from": "archive",
+          "to": "archive",
+          "condition": "pause"
+        }
+      ],
+      "outputSchemas": [
+        {
+          "id": "comet.intake.v1",
+          "description": "Comet change intake and initial state.",
+          "artifacts": [
+            {
+              "id": "comet-state",
+              "kind": "state",
+              "required": true,
+              "paths": [
+                "changes/*/.comet.yaml"
+              ],
+              "pathBase": "classic-openspec-root",
+              "validations": [
+                "state-transition"
+              ]
+            }
+          ],
+          "evidence": [
+            {
+              "id": "intake-summary",
+              "required": true
+            }
+          ]
+        },
+        {
+          "id": "comet.design.v1",
+          "description": "Comet design artifacts and OpenSpec delta context.",
+          "artifacts": [
+            {
+              "id": "design-doc",
+              "kind": "file",
+              "required": true,
+              "paths": [
+                "specs/*.md"
+              ],
+              "pathBase": "classic-superpowers-root",
+              "validations": [
+                "artifact-exists",
+                "artifact-structured"
+              ]
+            },
+            {
+              "id": "delta-spec",
+              "kind": "file",
+              "required": true,
+              "paths": [
+                "changes/*/specs/*/spec.md"
+              ],
+              "pathBase": "classic-openspec-root",
+              "validations": [
+                "artifact-exists",
+                "artifact-structured"
+              ]
+            }
+          ],
+          "evidence": [
+            {
+              "id": "design-summary",
+              "required": true
+            },
+            {
+              "id": "user-confirmation",
+              "required": true
+            }
+          ]
+        },
+        {
+          "id": "comet.plan.v1",
+          "description": "Comet executable implementation plan.",
+          "artifacts": [
+            {
+              "id": "implementation-plan",
+              "kind": "file",
+              "required": true,
+              "paths": [
+                "plans/*.md"
+              ],
+              "pathBase": "classic-superpowers-root",
+              "validations": [
+                "artifact-exists",
+                "artifact-structured"
+              ]
+            },
+            {
+              "id": "openspec-tasks",
+              "kind": "file",
+              "required": false,
+              "paths": [
+                "changes/*/tasks.md"
+              ],
+              "pathBase": "classic-openspec-root",
+              "validations": [
+                "artifact-exists",
+                "artifact-structured"
+              ]
+            }
+          ],
+          "evidence": [
+            {
+              "id": "producer-summary",
+              "required": true
+            }
+          ]
+        },
+        {
+          "id": "comet.execution-evidence.v1",
+          "description": "Comet build execution evidence and task completion.",
+          "artifacts": [
+            {
+              "id": "task-state",
+              "kind": "file",
+              "required": true,
+              "paths": [
+                "changes/*/tasks.md"
+              ],
+              "pathBase": "classic-openspec-root",
+              "validations": [
+                "artifact-structured",
+                "semantic"
+              ]
+            }
+          ],
+          "evidence": [
+            {
+              "id": "implementation-summary",
+              "required": true
+            },
+            {
+              "id": "test-evidence",
+              "required": true
+            }
+          ]
+        },
+        {
+          "id": "comet.handoff.v1",
+          "description": "Subagent handoff request and returned evidence.",
+          "artifacts": [],
+          "evidence": [
+            {
+              "id": "handoff-request",
+              "required": true
+            },
+            {
+              "id": "handoff-result",
+              "required": true
+            }
+          ]
+        },
+        {
+          "id": "comet.review.v1",
+          "description": "Review or whitebox rule report.",
+          "artifacts": [],
+          "evidence": [
+            {
+              "id": "review-summary",
+              "required": true
+            },
+            {
+              "id": "review-blockers",
+              "required": false
+            }
+          ]
+        },
+        {
+          "id": "comet.verify.v1",
+          "description": "Comet verification evidence and branch handling.",
+          "artifacts": [],
+          "evidence": [
+            {
+              "id": "verification-commands",
+              "required": true
+            },
+            {
+              "id": "verification-result",
+              "required": true
+            }
+          ]
+        },
+        {
+          "id": "comet.archive.v1",
+          "description": "OpenSpec archive and delta sync result.",
+          "artifacts": [],
+          "evidence": [
+            {
+              "id": "archive-summary",
+              "required": true
+            },
+            {
+              "id": "archived-state",
+              "required": true
+            }
+          ]
+        }
+      ],
+      "state": {
+        "kind": "comet-overlay",
+        "statePath": "changes/*/.comet.yaml",
+        "pathBase": "classic-openspec-root",
+        "currentNodeField": "phase",
+        "completedNodesField": "completedNodes",
+        "evidenceField": "evidence"
+      },
+      "evals": [
+        {
+          "id": "comet-five-phase-contract",
+          "expectedNodeOrder": [
+            "open",
+            "design",
+            "plan",
+            "execute",
+            "subagent-execute",
+            "review",
+            "verify",
+            "archive"
+          ],
+          "requiredOutputSchemas": [
+            "comet.intake.v1",
+            "comet.design.v1",
+            "comet.plan.v1",
+            "comet.execution-evidence.v1",
+            "comet.handoff.v1",
+            "comet.review.v1",
+            "comet.verify.v1",
+            "comet.archive.v1"
+          ]
+        }
+      ]
+    },
+    "preferenceWarnings": [],
+    "compositionEntrySkills": [
+      "comet-open",
+      "comet-design",
+      "archify",
+      "comet-build",
+      "subagent-driven-development",
+      "requesting-code-review",
+      "comet-verify",
+      "comet-archive"
+    ],
+    "resolvedSkills": [
+      {
+        "query": "comet-open",
+        "preferenceIndex": 0,
+        "status": "available",
+        "sources": [
+          {
+            "name": "comet-open",
+            "preferenceIndex": 0,
+            "platform": "builtin",
+            "scope": "builtin",
+            "origin": "builtin",
+            "factory": {
+              "query": "comet-open"
+            },
+            "root": "./.comet/__bundle_builtin__/comet-open",
+            "description": "Built-in Comet workflow step: comet-open.",
+            "skillMd": "# comet-open\n",
+            "references": [],
+            "scripts": [],
+            "hash": "builtin:comet-open"
+          }
+        ]
+      },
+      {
+        "query": "comet-design",
+        "preferenceIndex": 1,
+        "status": "available",
+        "sources": [
+          {
+            "name": "comet-design",
+            "preferenceIndex": 1,
+            "platform": "builtin",
+            "scope": "builtin",
+            "origin": "builtin",
+            "factory": {
+              "query": "comet-design"
+            },
+            "root": "./.comet/__bundle_builtin__/comet-design",
+            "description": "Built-in Comet workflow step: comet-design.",
+            "skillMd": "# comet-design\n",
+            "references": [],
+            "scripts": [],
+            "hash": "builtin:comet-design"
+          }
+        ]
+      },
+      {
+        "query": "archify",
+        "preferenceIndex": 2,
+        "status": "available",
+        "sources": [
+          {
+            "name": "archify",
+            "preferenceIndex": 2,
+            "platform": "codex",
+            "scope": "global",
+            "origin": "global",
+            "factory": {
+              "query": "archify"
+            },
+            "root": "C:\\Users\\MI\\.agents\\skills\\archify",
+            "description": "Create polished, validated architecture, workflow, sequence, data-flow, and lifecycle/state diagrams as explorable standalone HTML with inline SVG, dark/light themes, optional trace motion, and PNG/JPEG/WebP/SVG/WebM export. Accept plain-language requirements or pasted Mermaid flowchart, sequenceDiagram, and stateDiagram input; inspect repository evidence when the diagram must reflect real code. Use when the user asks to visualize system architecture, infrastructure, cloud/security/network topology, technical workflows, API call sequences, request lifecycles, data pipelines, ETL/ELT, data lineage, state machines, or to convert/beautify Mermaid.",
+            "skillMd": "---\r\nname: archify\r\ndescription: Create polished, validated architecture, workflow, sequence, data-flow, and lifecycle/state diagrams as explorable standalone HTML with inline SVG, dark/light themes, optional trace motion, and PNG/JPEG/WebP/SVG/WebM export. Accept plain-language requirements or pasted Mermaid flowchart, sequenceDiagram, and stateDiagram input; inspect repository evidence when the diagram must reflect real code. Use when the user asks to visualize system architecture, infrastructure, cloud/security/network topology, technical workflows, API call sequences, request lifecycles, data pipelines, ETL/ELT, data lineage, state machines, or to convert/beautify Mermaid.\r\nlicense: MIT\r\nmetadata:\r\n  version: \"2.13\"\r\n  author: tt-a1i\r\n  based_on: Cocoon-AI/architecture-diagram-generator (MIT, v1.0)\r\n---\r\n\r\n# Archify\r\n\r\nCreate a self-contained, interactive HTML diagram from a small typed JSON specification. Static output is the default; enable motion only when the user asks for a demo or presentation.\r\n\r\n## Fast authoring path\r\n\r\nUse this bounded path for ordinary generation. Do not read the optional Viewer Runtime reference unless the user asks about those features.\r\n\r\n1. Choose `architecture`, `workflow`, `sequence`, `dataflow`, or `lifecycle` from the question.\r\n2. Read one matching schema in `schemas/`, `schemas/common.schema.json`, and one matching JSON example in `examples/`. Read only those files. Fresh authorship means new stable IDs, domain wording, and layout; use the example for field shape, not facts.\r\n3. Artifact first: the next tool action must write the candidate. Write the candidate before inspecting renderer internals. Do not plan exact coordinates in prose. Start with one clear main path, short side branches, sparse labels, and at most 12 primary nodes. Set `meta.quality_profile` to `\"showcase\"` unless the user explicitly requests a dense `standard` map. Start with automatic routes and labels. Do not add `via`, `channelX`, `channelY`, or `labelAt` before a diagnostic calls for one; apply at most one diagnosed geometry control per repair.\r\n4. Validate after every candidate edit and immediately before handoff:\r\n\r\n   ```bash\r\n   node bin/archify.mjs validate <type> <candidate.json> --quality showcase --json\r\n   ```\r\n\r\n   A receipt with only 4 artifact checks is basic validation, never showcase acceptance. A showcase pass must report all 9 artifact checks with 0 composition errors and 0 warnings. If the candidate omits or misspells the exact `meta.quality_profile` field, fix it before geometry. A passing final validation freezes the candidate: never edit it afterward.\r\n5. For a delivered HTML, `deliver` is the final acceptance command:\r\n\r\n   ```bash\r\n   node bin/archify.mjs deliver <type> <candidate.json> <output.html> --quality showcase --json\r\n   ```\r\n\r\n   A non-zero exit can never be described as success. If validation fails, change only the diagnosed `subject`, verify `evidence`, choose from `supportedFixes`, and rerun. Continue focused correction while the objective error count reaches a new minimum. If two consecutive rounds do not improve that best count, stop and report the unresolved diagnostics truthfully.\r\n\r\nDo not read `renderers/shared/geometry.mjs`, renderer source, validator source, tests, or benchmarks before the first candidate. Inspect implementation only for an unsupported internal diagnostic or after two focused repairs fail.\r\n\r\nLifecycle note: phase columns `0..4` occupy the main rail; event/outcome columns `0..2` align beneath later phases. A recoverable state uses `type: \"failure\"` plus a real transition back to the active state.\r\n\r\n## Type router\r\n\r\n| Type | Use for |\r\n|---|---|\r\n| `architecture` | Components, services, cloud/security boundaries, infrastructure |\r\n| `workflow` | Processes, approval gates, tool calls, runbooks, CI/CD |\r\n| `sequence` | API call chains, request lifecycles, async traces, returns |\r\n| `dataflow` | Pipelines, ETL/ELT, lineage, governance, consumers |\r\n| `lifecycle` | State/status transitions, retries, waiting and terminal states |\r\n\r\nWhen ambiguous, run `node bin/archify.mjs guide \"<scenario>\" --json`. Scenario proof examples are structural references, not facts to copy.\r\n\r\n## Mermaid input\r\n\r\nRead Mermaid for topology and meaning, then author fresh Archify JSON; do not mechanically render Mermaid styling.\r\n\r\n- `flowchart` / `graph` → `workflow`, or `architecture` for a component map.\r\n- `sequenceDiagram` → `sequence`; participants become semantic participants and arrows become messages.\r\n- `stateDiagram` → `lifecycle`; states and transitions retain meaning, not Mermaid style.\r\n\r\n## Authoring invariants\r\n\r\n- One obvious main path; side branches leave the nearest main-path node. Remove low-value edges before adding routing controls.\r\n- Omit `meta.legend` for the truthful `auto` default. When needed, use only `mode: auto|all|hidden` and renderer-supported `entries.<kind>.label|visible`; labels never change semantics.\r\n- Component types are `frontend`, `backend`, `database`, `cloud`, `security`, `messagebus`, and `external`; variants are `default`, `emphasis`, `security`, and `dashed`.\r\n- Spacing means clear gap, not center distance. For a relationship label, clear gap must exceed its measured mask width; otherwise omit the label or move it deliberately.\r\n- Automatic routes own their endpoint sides. A side is a direction contract: the first and final segment must leave/enter perpendicular to that side.\r\n- Automatic Port Spread is a default renderer behavior for architecture, workflow, data-flow, and lifecycle. It skips single relationships and explicit `via`, `channelX`, `channelY`, `labelAt`, or non-`auto` routes. Near parallel ports use an outside bridge so automatic routing cannot create a sub-8px segment or sub-16px interior turn.\r\n- Never accept an edge crossing an unrelated opaque node, an ambiguous shared corridor, or a relationship label masking another route.\r\n\r\nRead `references/authoring-contract.md` only when you need field enums, spacing math, geometry repair rules, repository evidence, or mode-specific placement.\r\n\r\n## Delivery\r\n\r\nUse `validate` during repair and `deliver` once for final acceptance. Delivery freezes the exact specification bytes into a private same-directory snapshot, renders and checks that snapshot, atomically commits the HTML, and reports SHA-256 plus byte counts for both specification and artifact.\r\n\r\nAdd `--open` only when the user wants an immediate local preview. For an active desktop authoring loop, the optional command is:\r\n\r\n```bash\r\nnode bin/archify.mjs preview <type> <input>.json <output>.html --quality showcase\r\n```\r\n\r\nNever start preview by default. Read `references/delivery-contract.md` when using preview, repository evidence, export receipts, visual review, or post-commit opening.\r\n\r\n## Optional viewer capabilities\r\n\r\nGenerated HTML already contains theme switching, pan/zoom, search, focus, relationship tracing, semantic views, presentation, and truthful exports. These are reader capabilities, not extra authoring work. `meta.animation: \"trace\"` is opt-in; `meta.views` is optional and should contain at most five curated chapters.\r\n\r\nRead `references/viewer-runtime.md` only when the user explicitly asks for Share Cards, Route/Reach cards, motion, guided stories, deep links, presentation, search/focus, or another Viewer Runtime feature.\r\n\r\n## Setup and fallback\r\n\r\nNo install is required inside the skill package. Verify with:\r\n\r\n```bash\r\nnode bin/archify.mjs doctor\r\nnode bin/archify.mjs demo <output-directory>\r\n```\r\n\r\nWhen shell access is unavailable, hand-place architecture SVG into `assets/template.html`, use CSS semantic classes rather than inline colors, and follow the visual review contract in `references/delivery-contract.md`.\r\n\r\n## Output\r\n\r\nReturn the checked HTML path, diagram type, validation summary, specification/artifact receipt, and truthful visual-review status. Do not claim success for a non-zero command or claim visual inspection you did not perform.\r\n",
+            "references": [],
+            "scripts": [
+              {
+                "path": "scripts/check-render-output.mjs",
+                "sideEffect": "unknown"
+              },
+              {
+                "path": "scripts/generate-validators.mjs",
+                "sideEffect": "unknown"
+              },
+              {
+                "path": "scripts/render-examples.mjs",
+                "sideEffect": "unknown"
+              }
+            ],
+            "hash": "5e891a891d3bd3dfde5dac3f652a39bc15709e01060708b89e79e33f1221184c"
+          }
+        ]
+      },
+      {
+        "query": "comet-build",
+        "preferenceIndex": 3,
+        "status": "available",
+        "sources": [
+          {
+            "name": "comet-build",
+            "preferenceIndex": 3,
+            "platform": "builtin",
+            "scope": "builtin",
+            "origin": "builtin",
+            "factory": {
+              "query": "comet-build"
+            },
+            "root": "./.comet/__bundle_builtin__/comet-build",
+            "description": "Built-in Comet workflow step: comet-build.",
+            "skillMd": "# comet-build\n",
+            "references": [],
+            "scripts": [],
+            "hash": "builtin:comet-build"
+          }
+        ]
+      },
+      {
+        "query": "subagent-driven-development",
+        "preferenceIndex": 4,
+        "status": "available",
+        "sources": [
+          {
+            "name": "subagent-driven-development",
+            "preferenceIndex": 4,
+            "platform": "builtin",
+            "scope": "builtin",
+            "origin": "builtin",
+            "factory": {
+              "query": "subagent-driven-development"
+            },
+            "root": "./.comet/__bundle_builtin__/subagent-driven-development",
+            "description": "Built-in Comet workflow step: subagent-driven-development.",
+            "skillMd": "# subagent-driven-development\n",
+            "references": [],
+            "scripts": [],
+            "hash": "builtin:subagent-driven-development"
+          }
+        ]
+      },
+      {
+        "query": "requesting-code-review",
+        "preferenceIndex": 5,
+        "status": "available",
+        "sources": [
+          {
+            "name": "requesting-code-review",
+            "preferenceIndex": 5,
+            "platform": "builtin",
+            "scope": "builtin",
+            "origin": "builtin",
+            "factory": {
+              "query": "requesting-code-review"
+            },
+            "root": "./.comet/__bundle_builtin__/requesting-code-review",
+            "description": "Built-in Comet workflow step: requesting-code-review.",
+            "skillMd": "# requesting-code-review\n",
+            "references": [],
+            "scripts": [],
+            "hash": "builtin:requesting-code-review"
+          }
+        ]
+      },
+      {
+        "query": "comet-verify",
+        "preferenceIndex": 6,
+        "status": "available",
+        "sources": [
+          {
+            "name": "comet-verify",
+            "preferenceIndex": 6,
+            "platform": "builtin",
+            "scope": "builtin",
+            "origin": "builtin",
+            "factory": {
+              "query": "comet-verify"
+            },
+            "root": "./.comet/__bundle_builtin__/comet-verify",
+            "description": "Built-in Comet workflow step: comet-verify.",
+            "skillMd": "# comet-verify\n",
+            "references": [],
+            "scripts": [],
+            "hash": "builtin:comet-verify"
+          }
+        ]
+      },
+      {
+        "query": "comet-archive",
+        "preferenceIndex": 7,
+        "status": "available",
+        "sources": [
+          {
+            "name": "comet-archive",
+            "preferenceIndex": 7,
+            "platform": "builtin",
+            "scope": "builtin",
+            "origin": "builtin",
+            "factory": {
+              "query": "comet-archive"
+            },
+            "root": "./.comet/__bundle_builtin__/comet-archive",
+            "description": "Built-in Comet workflow step: comet-archive.",
+            "skillMd": "# comet-archive\n",
+            "references": [],
+            "scripts": [],
+            "hash": "builtin:comet-archive"
+          }
+        ]
+      }
+    ],
+    "callChain": [
+      {
+        "skill": "comet-open",
+        "preferenceIndex": 0
+      },
+      {
+        "skill": "comet-design",
+        "preferenceIndex": 1
+      },
+      {
+        "skill": "archify",
+        "preferenceIndex": 2
+      },
+      {
+        "skill": "comet-build",
+        "preferenceIndex": 3
+      },
+      {
+        "skill": "subagent-driven-development",
+        "preferenceIndex": 4
+      },
+      {
+        "skill": "requesting-code-review",
+        "preferenceIndex": 5
+      },
+      {
+        "skill": "comet-verify",
+        "preferenceIndex": 6
+      },
+      {
+        "skill": "comet-archive",
+        "preferenceIndex": 7
+      }
+    ],
+    "deviations": [],
+    "engineMode": "deterministic",
+    "runnerMode": "standalone",
+    "planPath": "./.comet/bundle-factory-plans/comet-classic/plan.json",
+    "planHash": "55dd175ef7a2fe7cc042287a6da51681c9ded9a93fe5bd2a1785f16e66ee3451",
+    "proposalConfirmation": {
+      "confirmed": true,
+      "confirmedAt": "2026-08-08T14:13:53.461Z",
+      "proposalHash": "fdaaa784755b380a4d3ec0ec9c4e89c75dcc4cce56e664619e3192f3727beef0",
+      "preferenceHash": null,
+      "acceptedCapabilities": [
+        "skills",
+        "scripts",
+        "rules",
+        "hooks",
+        "references",
+        "agents"
+      ],
+      "warnings": []
+    },
+    "composition": {
+      "schemaVersion": 1,
+      "entrySkills": [
+        "comet-open",
+        "comet-design",
+        "archify",
+        "comet-build",
+        "subagent-driven-development",
+        "requesting-code-review",
+        "comet-verify",
+        "comet-archive"
+      ],
+      "steps": [
+        {
+          "id": "step-1",
+          "skill": "comet-open",
+          "source": "atomic",
+          "preferenceIndex": 0
+        },
+        {
+          "id": "step-2",
+          "skill": "comet-design",
+          "source": "atomic",
+          "preferenceIndex": 1
+        },
+        {
+          "id": "step-3",
+          "skill": "archify",
+          "source": "atomic",
+          "preferenceIndex": 2
+        },
+        {
+          "id": "step-4",
+          "skill": "comet-build",
+          "source": "atomic",
+          "preferenceIndex": 3
+        },
+        {
+          "id": "step-5",
+          "skill": "subagent-driven-development",
+          "source": "atomic",
+          "preferenceIndex": 4
+        },
+        {
+          "id": "step-6",
+          "skill": "requesting-code-review",
+          "source": "atomic",
+          "preferenceIndex": 5
+        },
+        {
+          "id": "step-7",
+          "skill": "comet-verify",
+          "source": "atomic",
+          "preferenceIndex": 6
+        },
+        {
+          "id": "step-8",
+          "skill": "comet-archive",
+          "source": "atomic",
+          "preferenceIndex": 7
+        }
+      ],
+      "choices": [],
+      "issues": []
+    },
+    "generatedSkillPackage": {
+      "entrySkill": "comet-classic",
+      "internalSkills": [
+        "comet-classic-open",
+        "comet-classic-design",
+        "comet-classic-plan",
+        "comet-classic-execute",
+        "comet-classic-subagent-execute",
+        "comet-classic-review",
+        "comet-classic-verify",
+        "comet-classic-archive"
+      ],
+      "packageRoot": "./.comet/bundle-drafts/comet-classic/skills/comet-classic",
+      "enginePath": "./.comet/bundle-drafts/comet-classic/skills/comet-classic/comet",
+      "evalManifestPath": "./.comet/bundle-drafts/comet-classic/skills/comet-classic/comet/eval.yaml",
+      "controlPlane": {
+        "checksPath": "./.comet/bundle-drafts/comet-classic/skills/comet-classic/comet/checks.yaml",
+        "evalManifestPath": "./.comet/bundle-drafts/comet-classic/skills/comet-classic/comet/eval.yaml",
+        "compositionReportPath": "./.comet/bundle-drafts/comet-classic/skills/comet-classic/reference/composition-report.md",
+        "scripts": [
+          "./.comet/bundle-drafts/comet-classic/skills/comet-classic/scripts/comet-plan.mjs",
+          "./.comet/bundle-drafts/comet-classic/skills/comet-classic/scripts/comet-check.mjs",
+          "./.comet/bundle-drafts/comet-classic/skills/comet-classic/scripts/comet-hook-guard.mjs",
+          "./.comet/bundle-drafts/comet-classic/skills/comet-classic/scripts/workflow-state.mjs",
+          "./.comet/bundle-drafts/comet-classic/skills/comet-classic/scripts/workflow-guard.mjs",
+          "./.comet/bundle-drafts/comet-classic/skills/comet-classic/scripts/workflow-handoff.mjs"
+        ]
+      },
+      "platformAgents": [],
+      "unauthoredSubstanceNodes": [],
+      "wrapperClassification": "delegate-complete"
+    },
+    "authoringContent": {
+      "SKILL.md": "## Decision Core\n\n### Automatic Node Detection\n\nOn every invocation, start from disk state, not chat memory:\n\n1. Run `node comet-classic/scripts/workflow-state.mjs status` to read the active Classic change and its current phase.\n2. If no active change exists and the user gave a task, treat this as a fresh open → design → build → verify → archive workflow. Initialize the change through the `open` Node before reading `next`.\n3. If an active change exists, trust the script's reported `phase` and `completedNodes` over conversation history. Context compaction may have discarded earlier state.\n4. Resolve drift: if the user's message clearly belongs to a different Node than the script's `next` output (e.g., the script says `design` but the user is asking about test results), pause and ask which Node to enter. Do not silently override the script.\n5. If the script reports a Node as DONE but its required artifacts or evidence are missing, re-enter that Node instead of advancing. File evidence is the source of truth.\n\n### Decision Classification And Decision Points\n\nGenuine user decisions that require a pause:\n\n- **Change shape**: when opening a new change and more than one isolation mode (`current` / `branch` / `worktree`) is valid.\n- **Scope confirmation**: when the user's request materially changes the accepted design, plan, or acceptance criteria after the design Node is complete.\n- **Archive finish choice**: when archiving a branch/worktree change and multiple finish options exist (local merge, push, push+PR, keep).\n\nAutomatic handling (do not ask):\n\n- Deterministic guard failures with a single repair path.\n- `NEXT: auto` with one valid `SKILL:` output.\n- Re-running a Node because required artifacts are missing.\n- Loading the Node Skill returned by `workflow-state.mjs next`.\n\nStop conditions:\n\n- The Comet CLI is not installed or returns invalid JSON.\n- Multiple active Classic changes exist and the script cannot disambiguate.\n- A Node guard fails with no deterministic recovery path.\n- `workflow-state.mjs` returns `NEXT: manual` and the required input cannot be inferred from the user's message.\n\n### Red Flags\n\n| Agent thought | Actual risk | Correct response |\n|---|---|---|\n| \"The user mentioned testing, so we should skip to verify.\" | Mentioning a topic does not change the current Node or completed artifacts. | Stay in the current Node unless the script's `next` output or a scope confirmation explicitly advances. |\n| \"The design artifact exists, so design is done.\" | The artifact may be a stale scaffold. | Check the evidence field and user-confirmation receipt, not just file existence. |\n| \"I can load multiple Node Skills at once to speed things up.\" | Violates single-Node progression and corrupts state. | Load only the one Skill returned by `workflow-state.mjs next`. |\n| \"Conversation memory says we are in build.\" | Context may have been compacted. | Re-read `workflow-state.mjs status` on every resume. |\n| \"The guard failed, so I'll retry the same action blindly.\" | May loop or miss a required user decision. | Diagnose the failure; if no deterministic fix exists, pause and ask. |\n\n### Resume And Drift Rules\n\n- **Re-detect from scratch**: on every context resume, re-run the Startup Protocol. Do not trust conversation history for current-Node detection.\n- **Trust files over state**: if the script says a Node is DONE but its expected artifacts or evidence are missing, treat the Node as incomplete and re-enter it.\n- **Drift handling**: if the user's request belongs to a different Node than the one returned by `next`, pause and confirm which Node to enter. Do not silently follow the script if the user's intent conflicts.\n- **Redoing a Node**: if the user wants to redo a completed Node, reset its completion state and re-enter rather than creating a parallel path.\n"
+    },
+    "authoringReview": {
+      "passed": true,
+      "evidenceSource": "llm-single",
+      "voters": 1,
+      "lenses": [
+        "contract-fit",
+        "usability",
+        "evidence-trace",
+        "self-consistency"
+      ],
+      "rounds": 1,
+      "findings": [],
+      "reviewedAt": "2026-08-08T14:20:00.000Z"
+    }
+  }
+}

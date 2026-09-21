@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "日常录音分析工具 · API 模型集成架构",
+    "subtitle": "用模型 API 替换本地重型模型后的运行时架构",
+    "output": "api-model-integration-architecture.html",
+    "quality_profile": "showcase",
+    "views": [
+      {
+        "id": "main-flow",
+        "label": "主分析流程",
+        "focus": ["audio_input", "cli", "pipeline", "preprocessor", "api_provider", "local_analyzers", "reporter"],
+        "note": "录音经本地预处理与编排后，调用模型 API 完成识别与embedding，再汇总生成报告。"
+      },
+      {
+        "id": "api-detail",
+        "label": "API 承担的能力",
+        "focus": ["api_provider", "local_analyzers", "reporter"],
+        "note": "API 负责 ASR、声纹、情感、正音；本地保留规则与韵律分析。"
+      }
+    ]
+  },
+  "components": [
+    { "id": "audio_input", "type": "external", "label": "录音文件", "sublabel": "WAV / MP3 / M4A", "pos": [40, 220], "size": [120, 60] },
+    { "id": "cli", "type": "frontend", "label": "CLI", "sublabel": "speaking-analysis", "pos": [220, 220], "size": [110, 60] },
+    { "id": "pipeline", "type": "backend", "label": "Pipeline", "sublabel": "流程编排", "pos": [390, 220], "size": [120, 60] },
+    { "id": "preprocessor", "type": "backend", "label": "Preprocessor", "sublabel": "本地 VAD / 降噪 / 切分", "pos": [390, 80], "size": [130, 60] },
+    { "id": "api_provider", "type": "cloud", "label": "Model API Gateway", "sublabel": "ASR / 声纹嵌入（可扩展情感/正音）", "pos": [600, 80], "size": [190, 60] },
+    { "id": "local_analyzers", "type": "backend", "label": "本地分析器", "sublabel": "文本规则 / 音频韵律 / 情感 / 正音", "pos": [600, 220], "size": [190, 60] },
+    { "id": "reporter", "type": "backend", "label": "Reporter", "sublabel": "Markdown / JSON", "pos": [600, 360], "size": [120, 60] },
+    { "id": "output", "type": "external", "label": "报告输出", "sublabel": "output/", "pos": [800, 360], "size": [110, 60] }
+  ],
+  "boundaries": [
+    { "kind": "region", "label": "本地运行时", "wraps": ["cli", "pipeline", "preprocessor", "local_analyzers", "reporter"] },
+    { "kind": "region", "label": "模型 API 服务", "wraps": ["api_provider"] }
+  ],
+  "connections": [
+    { "id": "audio-to-cli", "from": "audio_input", "to": "cli", "label": "注册 / 分析" },
+    { "id": "cli-to-pipeline", "from": "cli", "to": "pipeline", "variant": "emphasis" },
+    { "id": "pipeline-to-preprocessor", "from": "pipeline", "to": "preprocessor", "label": "音频预处理", "fromSide": "top", "toSide": "bottom" },
+    { "id": "preprocessor-to-api", "from": "preprocessor", "to": "api_provider", "label": "音频片段", "variant": "dashed" },
+    { "id": "api-to-local", "from": "api_provider", "to": "local_analyzers", "label": "转写 / 嵌入", "variant": "dashed", "fromSide": "bottom", "toSide": "top", "labelAt": [695, 154] },
+    { "id": "pipeline-to-local", "from": "pipeline", "to": "local_analyzers", "label": "utterances + 时间戳", "labelAt": [555, 294] },
+    { "id": "pipeline-to-reporter", "from": "pipeline", "to": "reporter", "label": "分析结果", "fromSide": "bottom", "toSide": "top" },
+    { "id": "reporter-to-output", "from": "reporter", "to": "output", "variant": "emphasis" }
+  ],
+  "cards": [
+    { "dot": "cyan", "title": "保留本地", "items": ["VAD / 降噪 / 切分", "文本规则分析", "音频韵律特征", "报告生成"] },
+    { "dot": "emerald", "title": "API 化", "items": ["ASR 转写", "声纹 / 说话人嵌入"] },
+    { "dot": "rose", "title": "关注点", "items": ["API 密钥与请求超时配置", "失败回退到本地占位逻辑", "长音频切片与并发控制", "数据不上传隐私策略"] }
+  ]
+}

@@ -1,0 +1,74 @@
+{
+  "goal": "Create a project-specific comet-classic five-phase workflow Skill for building the daily speaking analysis tool, starting from the design Node.",
+  "skillCreatorIntent": "create-workflow",
+  "workflow": {
+    "kind": "comet-five-phase-overlay",
+    "name": "comet-classic",
+    "goal": "Guide the agent through open/design/build/verify/archive to build the speaking analysis tool.",
+    "nodes": {
+      "open": {
+        "responsibility": "Create a Classic change and confirm the problem statement and scope from the user's request.",
+        "outputSchema": {
+          "name": "classic-change-init",
+          "artifacts": [".comet.yaml", "brief.md"]
+        },
+        "enforcement": "guarded"
+      },
+      "design": {
+        "responsibility": "Produce the architecture and implementation plan for the speaking analysis tool, using the clarified requirements from the Native brief as seed input.",
+        "outputSchema": {
+          "name": "design-spec",
+          "artifacts": ["design.md", "architecture.md"]
+        },
+        "requiredSkillCalls": [
+          {
+            "skill": "archify",
+            "scope": "design",
+            "reason": "Generate architecture diagrams for the speaking analysis pipeline."
+          }
+        ],
+        "enforcement": "guarded"
+      },
+      "plan": {
+        "responsibility": "Break design into concrete implementation tasks and acceptance criteria.",
+        "outputSchema": {
+          "name": "implementation-plan",
+          "artifacts": ["plan.md"]
+        },
+        "enforcement": "guarded"
+      },
+      "execute": {
+        "responsibility": "Implement the code according to design and plan.",
+        "outputSchema": {
+          "name": "implementation",
+          "artifacts": ["src/**", "tests/**"]
+        },
+        "enforcement": "handoff-guarded"
+      },
+      "review": {
+        "responsibility": "Review implementation against design and acceptance criteria.",
+        "outputSchema": {
+          "name": "review-report",
+          "artifacts": ["review.md"]
+        },
+        "enforcement": "advisory"
+      },
+      "verify": {
+        "responsibility": "Run validation and tests to prove the implementation works.",
+        "outputSchema": {
+          "name": "verification",
+          "artifacts": ["verification.md"]
+        },
+        "enforcement": "guarded"
+      },
+      "archive": {
+        "responsibility": "Finalize the change and commit/merge if appropriate.",
+        "outputSchema": {
+          "name": "archive",
+          "artifacts": ["archive.md"]
+        },
+        "enforcement": "guarded"
+      }
+    }
+  }
+}

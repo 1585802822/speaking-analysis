@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "日常录音分析工具架构",
+    "subtitle": "本地运行的说话人识别、转写与多维度分析流水线",
+    "output": "docs/superpowers/specs/speaking-analysis-architecture.html",
+    "visual_preset": "blueprint",
+    "animation": "none",
+    "quality_profile": "standard"
+  },
+  "components": [
+    { "id": "input", "type": "external", "label": "input/ 目录", "sublabel": "用户放入录音", "pos": [60, 300], "size": [120, 60] },
+    { "id": "watcher", "type": "backend", "label": "文件夹监控器", "sublabel": "watchdog", "pos": [240, 300], "size": [130, 60] },
+    { "id": "preprocessor", "type": "backend", "label": "音频预处理", "sublabel": "VAD / 降噪 / 切分", "pos": [440, 300], "size": [160, 60] },
+    { "id": "matcher", "type": "backend", "label": "用户语音筛选器", "sublabel": "声纹相似度匹配", "pos": [680, 300], "size": [160, 60] },
+    { "id": "asr", "type": "backend", "label": "ASR 转写", "sublabel": "faster-whisper", "pos": [900, 300], "size": [140, 60] },
+    { "id": "reporter", "type": "backend", "label": "报告生成器", "sublabel": "Markdown + JSON", "pos": [1100, 300], "size": [150, 60] },
+    { "id": "output", "type": "external", "label": "output/ 目录", "sublabel": "分析报告", "pos": [1320, 300], "size": [120, 60] },
+    { "id": "enrollment", "type": "security", "label": "声纹注册", "sublabel": "30-60s 样本", "pos": [240, 80], "size": [130, 60] },
+    { "id": "voiceprint", "type": "database", "label": "voiceprint/", "sublabel": "本地声纹库", "pos": [440, 80], "size": [160, 60] },
+    { "id": "text", "type": "backend", "label": "文本分析", "sublabel": "填充词 / 重复 / 长句", "pos": [860, 80], "size": [140, 60] },
+    { "id": "audio", "type": "backend", "label": "音频特征", "sublabel": "语速 / 停顿 / 清晰度", "pos": [1060, 80], "size": [140, 60] },
+    { "id": "emotion", "type": "backend", "label": "情感/语气", "sublabel": "emotion2vec", "pos": [1260, 80], "size": [140, 60] },
+    { "id": "pronunciation", "type": "backend", "label": "发音标准", "sublabel": "音素 / 声调 / 置信度", "pos": [1460, 80], "size": [140, 60] },
+    { "id": "diarization", "type": "backend", "label": "说话人分离", "sublabel": "pyannote.audio", "pos": [440, 520], "size": [160, 60] }
+  ],
+  "boundaries": [
+    { "kind": "region", "label": "本地处理边界", "wraps": ["watcher", "preprocessor", "enrollment", "voiceprint", "diarization", "matcher", "asr", "text", "audio", "emotion", "pronunciation", "reporter"] },
+    { "kind": "security-group", "label": "声纹与身份", "wraps": ["enrollment", "voiceprint", "diarization", "matcher"] }
+  ],
+  "connections": [
+    { "from": "input", "to": "watcher", "label": "新增音频", "variant": "emphasis" },
+    { "from": "watcher", "to": "preprocessor", "label": "触发", "variant": "emphasis" },
+    { "from": "preprocessor", "to": "matcher", "label": "预处理音频", "variant": "emphasis" },
+    { "from": "preprocessor", "to": "diarization", "label": "切分后片段", "fromSide": "bottom", "toSide": "top", "labelAt": [520, 374] },
+    { "from": "diarization", "to": "matcher", "label": "说话人片段", "fromSide": "right", "toSide": "bottom" },
+    { "from": "enrollment", "to": "voiceprint", "label": "注册声纹", "variant": "security" },
+    { "from": "voiceprint", "to": "matcher", "label": "参考声纹", "variant": "security", "fromSide": "right", "toSide": "top" },
+    { "from": "matcher", "to": "asr", "label": "用户语音", "variant": "emphasis" },
+    { "from": "asr", "to": "text", "label": "转写文本", "fromSide": "top", "toSide": "bottom" },
+    { "from": "asr", "to": "audio", "label": "时间戳 + 音频", "fromSide": "top", "toSide": "bottom", "via": [[970, 200], [1130, 200]] },
+    { "from": "asr", "to": "emotion", "label": "音频片段", "fromSide": "top", "toSide": "bottom", "via": [[970, 180], [1330, 180]] },
+    { "from": "asr", "to": "pronunciation", "label": "音素 / 置信度", "fromSide": "top", "toSide": "bottom", "via": [[970, 160], [1530, 160]] },
+    { "from": "text", "to": "reporter", "label": "文本发现", "fromSide": "bottom", "toSide": "top", "via": [[930, 240], [1175, 240]] },
+    { "from": "audio", "to": "reporter", "label": "音频发现", "fromSide": "bottom", "toSide": "top", "via": [[1130, 260], [1175, 260]] },
+    { "from": "emotion", "to": "reporter", "label": "情感发现", "fromSide": "bottom", "toSide": "top", "via": [[1330, 260], [1175, 260]] },
+    { "from": "pronunciation", "to": "reporter", "label": "正音发现", "fromSide": "bottom", "toSide": "top", "via": [[1530, 280], [1175, 280]] },
+    { "from": "reporter", "to": "output", "label": "生成报告", "variant": "emphasis" },
+    { "from": "output", "to": "voiceprint", "label": "低置信度纠偏", "variant": "dashed", "fromSide": "bottom", "toSide": "right", "via": [[1380, 620], [650, 620], [650, 110]] }
+  ],
+  "cards": [
+    { "dot": "cyan", "title": "隐私优先", "items": ["所有音频与声纹数据本地处理", "不上传云端", "声纹库保存在 voiceprint/ 目录"] },
+    { "dot": "emerald", "title": "分析维度", "items": ["文本：填充词、重复词、长句、逻辑连接词", "音频：语速、停顿、音量、清晰度", "情感：情绪类别与语气起伏", "正音：声调、音素、ASR 置信度"] },
+    { "dot": "amber", "title": "可扩展点", "items": ["历史报告保留原始文件", "架构预留趋势聚合接口", "首期不实现实时采集与 Dashboard"] }
+  ]
+}

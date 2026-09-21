@@ -1,0 +1,74 @@
+apiVersion: comet/v1alpha1
+kind: Skill
+metadata:
+  name: comet-classic
+  version: 1.0.0
+  description: Use when the user wants the comet-classic managed workflow for
+    Create a project-specific comet-classic five-phase workflow Skill for
+    building the daily speaking analysis tool, starting from the design Node,
+    explicitly invokes /comet-classic, or persisted workflow state identifies
+    one unambiguous active run. Route through this entry Skill; do not invoke
+    its internal Node Skills directly.
+goal:
+  statement: Guide the agent through open/design/build/verify/archive to build the
+    speaking analysis tool.
+  inputs: []
+  outputs:
+    - name: result
+      description: Generated workflow result
+  success:
+    - The generated workflow completes according to its workflow protocol
+orchestration:
+  mode: deterministic
+  entry: node-1-open
+  steps:
+    - id: node-1-open
+      action:
+        type: invoke_skill
+        ref: comet-classic-open
+      next: node-2-design
+    - id: node-2-design
+      action:
+        type: invoke_skill
+        ref: comet-classic-design
+      next: node-3-plan
+    - id: node-3-plan
+      action:
+        type: invoke_skill
+        ref: comet-classic-plan
+      next: node-4-execute
+    - id: node-4-execute
+      action:
+        type: invoke_skill
+        ref: comet-classic-execute
+      next: node-5-subagent-execute
+    - id: node-5-subagent-execute
+      action:
+        type: invoke_skill
+        ref: comet-classic-subagent-execute
+      next: node-6-review
+    - id: node-6-review
+      action:
+        type: invoke_skill
+        ref: comet-classic-review
+      next: node-7-verify
+    - id: node-7-verify
+      action:
+        type: invoke_skill
+        ref: comet-classic-verify
+      next: node-8-archive
+    - id: node-8-archive
+      action:
+        type: invoke_skill
+        ref: comet-classic-archive
+skills:
+  - id: comet-classic-open
+  - id: comet-classic-design
+  - id: comet-classic-plan
+  - id: comet-classic-execute
+  - id: comet-classic-subagent-execute
+  - id: comet-classic-review
+  - id: comet-classic-verify
+  - id: comet-classic-archive
+agents: []
+tools: []

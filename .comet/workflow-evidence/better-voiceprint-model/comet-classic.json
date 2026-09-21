@@ -1,0 +1,28 @@
+{
+  "design": {
+    "design-summary": "声纹模型升级设计完成: 修复speechbrain ECAPA导入路径(speechbrain.inference.speaker)+LocalStrategy.COPY+librosa加载, 注册增加能量VAD裁剪+3s分块均值, 阈值按实测校准0.40/0.25. 产物: docs/superpowers/specs/better-voiceprint-model-design.md, openspec/changes/better-voiceprint-model/specs/better-voiceprint-model/spec.md",
+    "user-confirmation": "用户已确认三项决策(ECAPA修复启用/VAD分块注册/阈值0.40-0.25)并确认进入build阶段",
+    "required-skill:design.archify": "archify dataflow 图已生成并 9/9 showcase 检查通过: docs/superpowers/specs/better-voiceprint-model-architecture.html + .json",
+    "completedChecks": [
+      "required-skill:design.archify",
+      "design-doc-created",
+      "delta-spec-created"
+    ]
+  },
+  "plan": {
+    "producer-summary": "实施计划已创建: docs/superpowers/plans/better-voiceprint-model-plan.md, 覆盖 embeddings ECAPA修复/单例/数组路径/声纹中心, enrollment 多文件注册, config 阈值校准, 分离脚本入口切换, 验证任务",
+    "recordedAt": "2026-08-19T07:42:01.770Z"
+  },
+  "execute": {
+    "implementation-summary": "Task 6/7 (用户 build 阶段追加): 1) 分离重叠修复 — diarization._merge_same_speaker_windows 同标签聚 run + 相邻 run 重叠区中点切界(输出有序/连续/不重叠), 尾窗回退补足整窗, _smooth_window_labels 消除孤立翻转, 连续 unknown 合并防碎片; 2) 预处理顺序保障 — 新增 scripts/preprocess_audio.py 按 (start,end) 排序导出 + 时间戳文件名(seg_{idx:03d}_{start:07.2f}-{end:07.2f}s.wav) + meta.json 记录源文件与时长, preprocessor 新增 load_denoised(); separate_enhanced/test_voiceprint 导出前清空输出目录并按时间排序, test_voiceprint 增加源一致性告警。",
+    "scope-receipt": "用户于 build 阶段明确提出两项改进目标(预处理后顺序错乱/分离后音频重合), 已追加为计划 Task 6/7 并完成, 未改变已确认的声纹模型设计决策。",
+    "test-evidence": "pytest tests/ 全量 70 passed (含新增 7 项: 重叠裁剪/同标签并集/无重叠性质/unknown合并/标签平滑/满长尾窗/时间排序)",
+    "e2e-evidence": "真实音频验证: enhanced/seg_000.wav (25.9s, ECAPA voiceprint 67 chunks) 分离 12 段碎片->5 段连续无重叠片段(0 overlapping pairs), user/other/unknown 三个目录时间范围互斥; preprocess_audio.py 对 160s 真实语音切片导出 2 段, 文件名排序==时间顺序, meta.json 记录 source_file/source_duration_sec。",
+    "recordedAt": "2026-08-19"
+  },
+  "review": {
+    "review-summary": "代码评审(requesting-code-review 流程, 独立评审子代理通读全部改动文件): VERDICT pass-with-nits, 0 blockers. 评审含 1470 组参数 fuzz 验证切窗循环、3000 次随机试验验证合并不重叠性质、端到端复现验证. 已按评审意见修复 4 项 nits: NIT1 合并硬边界(中间 run 被裁剪耗尽后后段不得越过前段结尾, 新增回归测试 test_merge_hard_clamp_when_middle_run_consumed), NIT2 preprocess_audio.py rmtree 前校验 --out 必须位于 output/ 之下, NIT3 separate_enhanced.py 整体清空 out_root 防残留片段目录, NIT6 test_voiceprint.py load_config 补 or {} 并清理重复 import/冗余 mkdir. 接受不修(已评估): NIT4 防御性死分支保留, NIT5 平滑窗口置信度沿用原相似度(度量诚实), NIT7 路径大小写告警(仅告警不阻断), NIT8 三次加载性能(本地脚本可接受). 修复后全量 71 passed.",
+    "review-blockers": [],
+    "recordedAt": "2026-08-19"
+  }
+}

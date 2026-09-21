@@ -1,0 +1,37 @@
+# 运行时数据（用户录音、报告、声纹）
+data/
+tmp/
+
+# 旧目录名（保留一段时间，防止误提交迁移残留）
+input/
+output/
+output_test/
+output_test_parallel/
+voiceprint/
+voiceprint_test/
+voiceprint_test_parallel/
+
+# 依赖与环境
+.venv/
+__pycache__/
+*.egg-info/
+.cache/
+
+# 敏感信息
+.env
+
+# 日志与系统文件
+*.log
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# 测试音频（体积大，本地保留）
+tests/fixtures/raw/
+tests/fixtures/test*.wav
+
+# 模型缓存（首次运行时自动下载，体积大）
+tmp/spkrec-ecapa-voxceleb/
+
+# Git 备份目录
+.git.bak.*/

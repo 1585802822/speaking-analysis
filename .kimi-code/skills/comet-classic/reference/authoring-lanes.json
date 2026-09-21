@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "protocolHash": "b8a4e13b0c7e567ef796698a6569e71c0ff82195fdf1241d8ed4cd44e18df016",
+  "lanes": [
+    {
+      "lane": "script"
+    },
+    {
+      "lane": "reference"
+    },
+    {
+      "lane": "pause-points"
+    },
+    {
+      "lane": "workflow-entry"
+    },
+    {
+      "lane": "skill-core"
+    },
+    {
+      "lane": "skill-review"
+    }
+  ],
+  "review": {
+    "passed": true,
+    "evidenceSource": "llm-single",
+    "voters": 1,
+    "lenses": [
+      "contract-fit",
+      "usability",
+      "evidence-trace",
+      "self-consistency"
+    ],
+    "rounds": 1,
+    "blockingFindings": [],
+    "warnings": []
+  }
+}

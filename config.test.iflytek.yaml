@@ -1,0 +1,63 @@
+# 讯飞开放平台实测配置（语音听写流式版）
+
+input_dir: "./input"
+output_dir: "./output_test_iflytek"
+voiceprint_dir: "./voiceprint_test_iflytek"
+audio_formats: [".mp3", ".wav", ".m4a", ".flac"]
+
+vad:
+  min_speech_duration_ms: 250
+  max_silence_duration_ms: 1000
+
+segmentation:
+  max_segment_duration_sec: 300
+  min_segment_duration_sec: 10
+  target_sample_rate: 16000
+  parallel_workers: 4
+
+speaker:
+  enrollment_duration_sec: 45
+  similarity_threshold: 0.75
+  low_confidence_threshold: 0.55
+  positive_lr: 0.25
+  negative_lr: 0.15
+  embedding_model: "speechbrain/spkrec-ecapa-voxceleb"
+  embedding_model_cache: "./tmp/spkrec-ecapa-voxceleb"
+  pyannote_embedding_model: "pyannote/embedding"
+
+asr:
+  model: "large-v3"  # API 可用时不会加载本地模型
+  device: "auto"
+  compute_type: "int8"
+  language: "zh"
+  beam_size: 5
+  vad_filter: true
+
+analysis:
+  filler_words:
+    zh: ["嗯", "啊", "然后", "就是", "那个", "这个", "对吧", "所以", "那么"]
+    en: ["um", "uh", "like", "you know", "so", "actually", "basically", "well"]
+  max_sentence_words: 45
+  min_pause_sec: 0.3
+  max_pause_sec: 2.0
+  pronunciation:
+    low_confidence_threshold: 0.65
+    phoneme_check: true
+
+reporting:
+  formats: ["markdown", "json"]
+
+api:
+  enabled: true
+  provider: "iflytek"
+  timeout: 1800  # 1.3h 音频按 55s 切块顺序识别, 超时设 30 分钟
+  iflytek:
+    mode: "stream"  # 语音听写（流式版）, 长音频自动切块
+    app_id: "cf748b8c"
+    api_key: "073939621f5384a83a65a7f3bd70c2e2"
+    api_secret: "ZGFmMjQ2YZMyNGI3M2JmOWFhMmY5YTBm"
+    language: "zh_cn"  # zh_cn 中文, en_us 英文
+  base_url: ""
+  endpoints:
+    asr: ""
+    embed: ""

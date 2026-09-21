@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "hooks": {
+    "preToolUse": [
+      {
+        "matcher": "create|edit|str_replace_editor|apply_patch",
+        "bash": "node \"D:/project/speaking-analysis/.github/skills/comet/scripts/comet-hook-router.mjs\" --platform \"github-copilot\" --project-root \"D:/project/speaking-analysis\"",
+        "powershell": "node \"D:/project/speaking-analysis/.github/skills/comet/scripts/comet-hook-router.mjs\" --platform \"github-copilot\" --project-root \"D:/project/speaking-analysis\""
+      }
+    ]
+  }
+}
