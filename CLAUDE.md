@@ -74,7 +74,7 @@ In this repository, before starting work that may need code changes or investiga
 ## Git 工作流
 
 - 分支：每个功能/修复开独立分支，命名 `feat/<功能>`、`fix/<问题>`（英文小写中划线）；完成后合并回 main 并删除该分支
-- 提交：小步提交，每个提交只做一件事；提交前对改动文件执行 Ruff 格式化
+- 提交：小步提交，每个提交只做一件事；提交前对改动文件执行 Ruff 格式化，在询问我是否提交时告诉我提交标题
 - 禁止提交：`.env`、`data/`、`.venv/`、`tmp/`、`__pycache__/`（.gitignore 已拦截，不得绕过）
 
 ## 测试
