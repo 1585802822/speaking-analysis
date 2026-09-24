@@ -5,6 +5,8 @@ description: "Use when the user wants the comet-classic managed workflow for Cre
 
 # comet-classic
 
+> **Runtime preference**: The installed `comet` CLI is the canonical Comet runtime. Prefer `comet state`, `comet guard`, `comet archive` and `comet check` over the bundled local scripts. The local scripts (`comet-classic/scripts/*.mjs`) are a fallback when the CLI is unavailable. Also, the Node Skills returned by `comet state next` (e.g. `comet-classic-review`) are not necessarily registered in the host Skill tool; if loading one fails, do not stop — execute the Node through the `comet` CLI and the Node descriptions below.
+
 ## Decision Core
 
 ## Decision Core
@@ -13,11 +15,11 @@ description: "Use when the user wants the comet-classic managed workflow for Cre
 
 On every invocation, start from disk state, not chat memory:
 
-1. Run `node comet-classic/scripts/workflow-state.mjs status` to read the active Classic change and its current phase.
+1. Read the active Classic change and its current phase. Prefer the canonical CLI: run `comet state current --json`. If that fails because no change is selected, run `comet state next <change-name> --json` after selecting the change with `comet state select <change-name>`, or fall back to `node comet-classic/scripts/workflow-state.mjs status`.
 2. If no active change exists and the user gave a task, treat this as a fresh open → design → build → verify → archive workflow. Initialize the change through the `open` Node before reading `next`.
-3. If an active change exists, trust the script's reported `phase` and `completedNodes` over conversation history. Context compaction may have discarded earlier state.
-4. Resolve drift: if the user's message clearly belongs to a different Node than the script's `next` output (e.g., the script says `design` but the user is asking about test results), pause and ask which Node to enter. Do not silently override the script.
-5. If the script reports a Node as DONE but its required artifacts or evidence are missing, re-enter that Node instead of advancing. File evidence is the source of truth.
+3. If an active change exists, trust the CLI-reported `phase` and `next` guidance over conversation history. Context compaction may have discarded earlier state.
+4. Resolve drift: if the user's message clearly belongs to a different Node than the `next` output (e.g., the CLI says `design` but the user is asking about test results), pause and ask which Node to enter. Do not silently override the CLI.
+5. If the CLI/script reports a Node as DONE but its required artifacts or evidence are missing, re-enter that Node instead of advancing. File evidence is the source of truth.
 
 ### Decision Classification And Decision Points
 
@@ -31,31 +33,32 @@ Automatic handling (do not ask):
 
 - Deterministic guard failures with a single repair path.
 - `NEXT: auto` with one valid `SKILL:` output.
-- Re-running a Node because required artifacts are missing.
-- Loading the Node Skill returned by `workflow-state.mjs next`.
+- Re-running a Node because required artifacts or evidence are missing.
+- Loading the Node Skill returned by `comet state next`, **or falling back to the `comet` CLI if that Skill is not registered**.
 
 Stop conditions:
 
 - The Comet CLI is not installed or returns invalid JSON.
-- Multiple active Classic changes exist and the script cannot disambiguate.
+- Multiple active Classic changes exist and the CLI/script cannot disambiguate.
 - A Node guard fails with no deterministic recovery path.
-- `workflow-state.mjs` returns `NEXT: manual` and the required input cannot be inferred from the user's message.
+- `comet state next` returns `NEXT: manual` and the required input cannot be inferred from the user's message.
+- A Node Skill cannot be loaded **and** the equivalent `comet` CLI command is unavailable.
 
 ### Red Flags
 
 | Agent thought | Actual risk | Correct response |
 |---|---|---|
-| "The user mentioned testing, so we should skip to verify." | Mentioning a topic does not change the current Node or completed artifacts. | Stay in the current Node unless the script's `next` output or a scope confirmation explicitly advances. |
+| "The user mentioned testing, so we should skip to verify." | Mentioning a topic does not change the current Node or completed artifacts. | Stay in the current Node unless the `next` output or a scope confirmation explicitly advances. |
 | "The design artifact exists, so design is done." | The artifact may be a stale scaffold. | Check the evidence field and user-confirmation receipt, not just file existence. |
-| "I can load multiple Node Skills at once to speed things up." | Violates single-Node progression and corrupts state. | Load only the one Skill returned by `workflow-state.mjs next`. |
-| "Conversation memory says we are in build." | Context may have been compacted. | Re-read `workflow-state.mjs status` on every resume. |
+| "I can load multiple Node Skills at once to speed things up." | Violates single-Node progression and corrupts state. | Load only the one Skill returned by `comet state next`. |
+| "Conversation memory says we are in build." | Context may have been compacted. | Re-read `comet state current/next` on every resume. |
 | "The guard failed, so I'll retry the same action blindly." | May loop or miss a required user decision. | Diagnose the failure; if no deterministic fix exists, pause and ask. |
 
 ### Resume And Drift Rules
 
-- **Re-detect from scratch**: on every context resume, re-run the Startup Protocol. Do not trust conversation history for current-Node detection.
-- **Trust files over state**: if the script says a Node is DONE but its expected artifacts or evidence are missing, treat the Node as incomplete and re-enter it.
-- **Drift handling**: if the user's request belongs to a different Node than the one returned by `next`, pause and confirm which Node to enter. Do not silently follow the script if the user's intent conflicts.
+- **Re-detect from scratch**: on every context resume, re-run the Startup Protocol. Do not trust conversation history for current-Node detection — context compaction may have discarded critical state.
+- **Trust files over state**: if the CLI/script says a Node is DONE but its expected artifacts or evidence are missing, treat the Node as incomplete and re-enter it. File evidence is the source of truth.
+- **Drift handling**: if the user's request belongs to a different Node than the one returned by `next`, pause and confirm which Node to enter. Do not silently follow the CLI if the user's intent conflicts.
 - **Redoing a Node**: if the user wants to redo a completed Node, reset its completion state and re-enter rather than creating a parallel path.
 
 
@@ -101,19 +104,20 @@ Stop conditions:
 
 ### Startup Protocol
 
-1. Run `node comet-classic/scripts/workflow-state.mjs status` to read the active Comet change state.
+1. Read the active Classic change. Prefer `comet state current --json`; if it reports no selected change, use `node comet-classic/scripts/workflow-state.mjs status` as a fallback.
 2. If there is no active Comet change, use `/comet-open` or the permanent `/comet-classic` entry to create or resume one.
-3. Run `node comet-classic/scripts/workflow-state.mjs next` and load **only** the returned Skill. Do not load multiple Skills at once.
+3. Get the next guidance with `comet state next <change-name> --json`. If the returned `SKILL:` can be loaded by the Skill tool, load exactly that one Skill. **If the Skill tool reports `Unknown skill`, do not treat it as a fatal error; instead execute the Node through the `comet` CLI (`comet guard`, `comet check`, `comet archive`) using the Node descriptions below.** Do not load multiple Skills at once.
 
 ### Resume Rules (every context resume)
 
 - **Re-detect from scratch**: on every context resume, re-run the Startup Protocol. Do not trust conversation history for current-Node detection — context compaction may have discarded critical state.
-- **Trust files over state**: if the script says a Node is DONE but its expected artifacts or evidence are missing, treat the Node as incomplete and re-enter it. File evidence is the source of truth.
-- **Drift handling**: if the user's request belongs to a different Node than the one returned by `next`, pause and confirm which Node to enter. Do not silently follow the script if the user's intent conflicts.
+- **Trust files over state**: if the CLI/script says a Node is DONE but its expected artifacts or evidence are missing, treat the Node as incomplete and re-enter it. File evidence is the source of truth.
+- **Drift handling**: if the user's request belongs to a different Node than the one returned by `next`, pause and confirm which Node to enter. Do not silently follow the CLI if the user's intent conflicts.
 
 ### Node Boundary Rules
 
-- Before leaving a Node, run `node comet-classic/scripts/workflow-guard.mjs exit <node> --apply` to advance state and record evidence.
+- Before leaving a Node, prefer the canonical CLI: run `comet guard <change-name> <phase> --apply` to advance state and record evidence. If the CLI is unavailable, fall back to `node comet-classic/scripts/workflow-guard.mjs exit <node> --apply`.
+- For the archive Node, after the user confirms the finish choice, run `comet archive <change-name>` (or `--dry-run` first if requested).
 - If the guard fails, do not proceed — present the guard output and ask the user how to fix it.
 - If the user wants to redo a completed Node, reset its completion state and re-enter rather than creating a parallel path.
 
