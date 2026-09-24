@@ -61,17 +61,15 @@ def test_enrollment_manager_enroll(tmp_path: Path) -> None:
 
 def test_enrollment_manager_enroll_m4a(tmp_path: Path) -> None:
     """EnrollmentManager 支持 m4a 格式声纹文件."""
+    import shutil
+
     voiceprint_m4a = Path("data/voiceprint/声纹.m4a")
     if not voiceprint_m4a.exists():
         pytest.skip("data/voiceprint/声纹.m4a 不存在")
 
-    # 若当前环境缺少 m4a 解码器(ffmpeg), 则跳过而非误判为失败
-    try:
-        import librosa
-
-        librosa.load(str(voiceprint_m4a), sr=16000, mono=True)
-    except Exception as exc:  # pragma: no cover - 环境相关
-        pytest.skip(f"当前环境无法解码 m4a 声纹文件: {exc}")
+    # m4a 需要 ffmpeg 解码; 当前环境无 ffmpeg 时跳过而非误报失败
+    if shutil.which("ffmpeg") is None:
+        pytest.skip("当前环境未安装 ffmpeg，无法解码 m4a")
 
     config = {
         "voiceprint_dir": str(tmp_path),

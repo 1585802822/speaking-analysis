@@ -6,7 +6,7 @@ readme = "README.md"
 authors = [
     { name = "Jas", email = "1585802822@qq.com" },
 ]
-requires-python = ">=3.9"
+requires-python = ">=3.11,<3.13"
 dependencies = [
     "click>=8.0",
     "watchdog>=3.0",
@@ -19,8 +19,8 @@ dependencies = [
     "pyannote.audio>=3.0",
     "speechbrain>=0.5.16",
     "transformers>=4.30",
-    "torch>=2.0",
-    "torchaudio>=2.0",
+    "torch>=2.0,<2.6",
+    "torchaudio>=2.0,<2.6",
     "pypinyin>=0.50",
     "phonemizer>=3.2",
     "jinja2>=3.1",
@@ -38,13 +38,14 @@ dev = [
 
 [tool.ruff]
 line-length = 100
-target-version = "py39"
+target-version = "py311"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "W"]
 
 [tool.uv]
 package = false
+required-environments = ["sys_platform == 'win32' and platform_machine == 'AMD64'"]
 
 [build-system]
 requires = ["uv_build>=0.12.15,<0.13.0"]

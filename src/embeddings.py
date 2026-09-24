@@ -6,6 +6,8 @@
 
 from __future__ import annotations
 
+import io
+import subprocess
 import sys
 import tempfile
 import warnings
@@ -16,7 +18,6 @@ import librosa
 import numpy as np
 
 from .model_api_client import ModelAPIClient
-
 
 TARGET_DIM = 192
 
@@ -32,16 +33,51 @@ def _cleanup_broken_speechbrain_imports() -> None:
     这会污染 inspect.getmodule() 的遍历路径, 导致后续所有 lazy_loader.load()
     (包括 librosa 内部的) 均触发 ImportError.  移除这些代理即可恢复.
     """
-    import sys
 
     to_remove = [
         k
         for k, mod in list(sys.modules.items())
-        if "speechbrain" in k
-        and type(mod).__name__ in ("DeprecatedModuleRedirect", "LazyModule")
+        if "speechbrain" in k and type(mod).__name__ in ("DeprecatedModuleRedirect", "LazyModule")
     ]
     for k in to_remove:
         del sys.modules[k]
+
+
+def _load_audio_with_ffmpeg(
+    audio_path: str | Path, target_sr: int = 16000, mono: bool = True
+) -> tuple[np.ndarray, int]:
+    """用 ffmpeg 把音频解码为 WAV 后加载为 numpy 数组.
+
+    当 librosa/soundfile 不支持原格式(如 m4a)且 ffmpeg 在 PATH 中时使用.
+    返回 (y, sr), y 为 float32 数组.
+    """
+    audio_path = Path(audio_path)
+    cmd = [
+        "ffmpeg",
+        "-hide_banner",
+        "-loglevel",
+        "error",
+        "-i",
+        str(audio_path),
+        "-ar",
+        str(target_sr),
+        "-ac",
+        "1" if mono else "2",
+        "-f",
+        "wav",
+        "-",
+    ]
+    result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    if result.returncode != 0:
+        raise RuntimeError(
+            f"ffmpeg 无法解码 {audio_path}: {result.stderr.decode('utf-8', errors='ignore')}"
+        )
+    import soundfile as sf
+
+    y, sr = sf.read(io.BytesIO(result.stdout), dtype="float32")
+    if mono and y.ndim > 1:
+        y = y.mean(axis=1)
+    return y, sr
 
 
 def _get_ecapa_classifier(config: dict[str, Any] | None = None) -> Any:
@@ -53,9 +89,7 @@ def _get_ecapa_classifier(config: dict[str, Any] | None = None) -> Any:
     """
     speaker_cfg = (config or {}).get("speaker", {})
     source = speaker_cfg.get("embedding_model", "speechbrain/spkrec-ecapa-voxceleb")
-    savedir = speaker_cfg.get(
-        "embedding_model_cache", f"./tmp/{source.replace('/', '_')}"
-    )
+    savedir = speaker_cfg.get("embedding_model_cache", f"./tmp/{source.replace('/', '_')}")
     key = (source, savedir)
     cached = _ECAPA_CLASSIFIER.get(key)
     if cached is not None:
@@ -126,9 +160,7 @@ def extract_embedding_from_array(
         return np.zeros(TARGET_DIM, dtype=np.float32)
 
 
-def extract_embedding(
-    audio_path: str | Path, config: dict[str, Any] | None = None
-) -> np.ndarray:
+def extract_embedding(audio_path: str | Path, config: dict[str, Any] | None = None) -> np.ndarray:
     """从音频文件路径提取嵌入, 优先重型模型, 回退本地 MFCC.
 
     TODO: 当前 emotion/pronunciation 任务不需要声纹嵌入, 但 correction loop 依赖它.
@@ -149,9 +181,13 @@ def extract_embedding(
                 warnings.warn(f"Embedding API 调用失败, 回退本地模型: {exc}")
 
     # 1) 尝试 speechbrain ECAPA-TDNN 说话人嵌入
-    #    注意: torchaudio.load 在 torchcodec DLL 损坏时不可用, 统一用 librosa 加载.
+    #    注意: torchaudio.load 在 torchcodec DLL 损坏时不可用, 统一用 librosa 加载;
+    #    对 m4a 等 librosa/soundfile 不支持的格式, 回退到 ffmpeg 解码.
     try:
-        y, sr = librosa.load(str(audio_path), sr=16000, mono=True)
+        try:
+            y, sr = librosa.load(str(audio_path), sr=16000, mono=True)
+        except Exception:
+            y, sr = _load_audio_with_ffmpeg(audio_path, target_sr=16000, mono=True)
         return _ecapa_embed_array(y, sr, config)
     except Exception:
         # speechbrain 导入或推理失败 — 清理 sys.modules 中的损坏懒加载代理,
@@ -171,9 +207,12 @@ def extract_embedding(
     except Exception:
         pass
 
-    # 3) 本地回退: librosa MFCC
+    # 3) 本地回退: librosa MFCC; 同样对 m4a 等格式用 ffmpeg 兜底
     try:
-        y, sr = librosa.load(str(audio_path), sr=16000, mono=True)
+        try:
+            y, sr = librosa.load(str(audio_path), sr=16000, mono=True)
+        except Exception:
+            y, sr = _load_audio_with_ffmpeg(audio_path, target_sr=16000, mono=True)
         return _mfcc_stats(y, sr)
     except Exception as exc:
         warnings.warn(f"嵌入提取全部失败, 返回零向量: {exc}")
