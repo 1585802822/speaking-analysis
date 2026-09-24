@@ -24,5 +24,15 @@
     "review-summary": "代码评审(requesting-code-review 流程, 独立评审子代理通读全部改动文件): VERDICT pass-with-nits, 0 blockers. 评审含 1470 组参数 fuzz 验证切窗循环、3000 次随机试验验证合并不重叠性质、端到端复现验证. 已按评审意见修复 4 项 nits: NIT1 合并硬边界(中间 run 被裁剪耗尽后后段不得越过前段结尾, 新增回归测试 test_merge_hard_clamp_when_middle_run_consumed), NIT2 preprocess_audio.py rmtree 前校验 --out 必须位于 output/ 之下, NIT3 separate_enhanced.py 整体清空 out_root 防残留片段目录, NIT6 test_voiceprint.py load_config 补 or {} 并清理重复 import/冗余 mkdir. 接受不修(已评估): NIT4 防御性死分支保留, NIT5 平滑窗口置信度沿用原相似度(度量诚实), NIT7 路径大小写告警(仅告警不阻断), NIT8 三次加载性能(本地脚本可接受). 修复后全量 71 passed.",
     "review-blockers": [],
     "recordedAt": "2026-08-19"
+  },
+  "verify": {
+    "verification-commands": "uv run pytest tests/ -q",
+    "verification-result": "70 passed, 1 skipped (m4a 解码器在当前环境不可用), 0 failed. 标准输出中伴随 1 条 torchcodec DLL 加载相关的 Windows fatal exception 信息, 但未导致测试失败.",
+    "recordedAt": "2026-09-24T00:00:00Z"
+  },
+  "archive": {
+    "archive-summary": "用户选择仅标记归档(keep-only), 不合并/推送分支. comet/better-voiceprint-model 已同步到当前 master(7aef22e), change 标记为 archived. 最终人工抽听确认留待用户后续自行完成.",
+    "archived-state": "phase: archive, archived: true, archive_confirmation: keep-only, branch_status: synced-to-master, base_ref: master",
+    "recordedAt": "2026-09-24T00:00:00Z"
   }
 }
