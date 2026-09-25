@@ -133,6 +133,20 @@ def _iflytek_config(app_id: str = "test_app", api_secret: str = "test_secret") -
     }
 
 
+def test_iflytek_credentials_read_from_env(monkeypatch):
+    """配置值为空时, 讯飞密钥应从环境变量读取."""
+    monkeypatch.setenv("IFLYTEK_APP_ID", "env_app")
+    monkeypatch.setenv("IFLYTEK_API_SECRET", "env_secret")
+    config = _iflytek_config(app_id="", api_secret="")
+    config["api"]["iflytek"]["app_id_env"] = "IFLYTEK_APP_ID"
+    config["api"]["iflytek"]["api_secret_env"] = "IFLYTEK_API_SECRET"
+
+    client = ModelAPIClient(config)
+    assert client.asr_available
+    assert client.iflytek_client.app_id == "env_app"
+    assert client.iflytek_client.api_secret == "env_secret"
+
+
 def test_iflytek_missing_credentials_not_available():
     client = ModelAPIClient(_iflytek_config(app_id="", api_secret=""))
     assert not client.asr_available
@@ -203,9 +217,7 @@ def test_iflytek_transcribe_upload_and_poll(tmp_path: Path):
     result_resp.raise_for_status = MagicMock()
     result_resp.json.return_value = {
         "ok": 0,
-        "data": json.dumps(
-            {"orderResult": json.dumps(order_result), "status": 4}
-        ),
+        "data": json.dumps({"orderResult": json.dumps(order_result), "status": 4}),
     }
 
     def fake_post(url: str, **kwargs):

@@ -4,14 +4,16 @@ from __future__ import annotations
 
 import tempfile
 from pathlib import Path
-from typing import Any
 
 import click
 
 from .config import ensure_dirs, load_config
+from .diarization import DiarizationModule
 from .embeddings import crop_audio_segment
 from .enrollment import EnrollmentManager
 from .pipeline import Pipeline
+from .preprocessor import Preprocessor
+from .separator import separate_audio
 from .watcher import Watcher
 
 
@@ -35,6 +37,40 @@ def register(ctx: click.Context, audio_path: str) -> None:
     manager = EnrollmentManager(config)
     manager.enroll(audio_path)
     click.echo("声纹注册完成。")
+
+
+@cli.command()
+@click.argument("audio_path", type=click.Path(exists=True))
+@click.option(
+    "--output-dir",
+    default="data/output/separated",
+    help="分离结果输出目录",
+    type=click.Path(),
+)
+@click.pass_context
+def separate(ctx: click.Context, audio_path: str, output_dir: str) -> None:
+    """分离音频中的用户语音与非用户语音.
+
+    输出 user.wav 和 other.wav 到指定目录.
+    """
+    config = ctx.obj["config"]
+    manager = EnrollmentManager(config)
+    voiceprint = manager.load_voiceprint()
+    if voiceprint is None:
+        click.echo("未找到注册声纹，请先执行 register 命令。", err=True)
+        raise click.Abort()
+
+    preprocessor = Preprocessor(config)
+    diarization = DiarizationModule(config)
+
+    path = Path(audio_path)
+    segments = preprocessor.process(path)
+    # 使用滑动窗口二次切分获得更细的说话人标签
+    labeled_segments = diarization.split_by_voiceprint(segments, voiceprint, path)
+    result = separate_audio(path, labeled_segments, output_dir)
+    click.echo("分离完成：")
+    click.echo(f"  用户语音: {result['user']}")
+    click.echo(f"  其他音频: {result['other']}")
 
 
 @cli.command()
@@ -96,9 +132,7 @@ def correct(
         negative_paths = _crop_segments(audio_path, negative_segments, tmpdir, "neg")
         manager.update_voiceprint(positive_paths, negative_paths)
 
-    click.echo(
-        f"声纹已增量更新: 确认 {len(positive_paths)} 段, 否认 {len(negative_paths)} 段。"
-    )
+    click.echo(f"声纹已增量更新: 确认 {len(positive_paths)} 段, 否认 {len(negative_paths)} 段。")
 
 
 def _parse_time_segments(raw_segments: tuple[str, ...]) -> list[tuple[float, float]]:

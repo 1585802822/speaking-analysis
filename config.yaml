@@ -55,26 +55,40 @@ analysis:
   pronunciation:
     low_confidence_threshold: 0.65
     phoneme_check: true
+    # 语音评测（ISE）总分达到该值视为"发音标准"
+    standard_threshold: 80
 
 reporting:
   formats: ["markdown", "json"]
 
-# Model API Gateway 配置（默认禁用，使用本地模型）
+# API 配置（MVP 默认启用讯飞开放平台）
 api:
-  enabled: false
-  provider: "gateway"  # gateway 统一网关 | iflytek 讯飞开放平台
+  enabled: true
+  provider: "iflytek"  # gateway 统一网关 | iflytek 讯飞开放平台
   base_url: "https://your-ai-gateway.example.com"
   api_key_env: "AI_GATEWAY_API_KEY"
   timeout: 120
   # 讯飞开放平台配置
-  # provider 为 iflytek 时填写 app_id 与 api_secret
-  # mode=stream 时还需填写 api_key（APIKey）
+  # 密钥优先从环境变量读取，环境变量名如下；
+  # 也可直接在下方填写（不推荐，避免提交真实密钥）。
   iflytek:
     mode: "long"  # long 录音文件转写（标准版） | stream 语音听写（流式版, 长音频自动切块）
     app_id: ""
+    app_id_env: "IFLYTEK_APP_ID"
     api_key: ""  # 仅 stream 模式需要（语音听写流式版 APIKey）
+    api_key_env: "IFLYTEK_API_KEY"
     api_secret: ""
+    api_secret_env: "IFLYTEK_API_SECRET"
     language: "cn"  # long: cn 中文, en 英文; stream: zh_cn 中文, en_us 英文
+    # 语音评测（ISE）配置
+    evaluation:
+      app_id: ""
+      app_id_env: "IFLYTEK_APP_ID"
+      api_key: ""  # ISE 鉴权用的 APIKey（X-CheckSum = md5(apiKey + curTime + param)）
+      api_key_env: "IFLYTEK_API_KEY"
+      # 评测题型：read_syllable | read_word | read_sentence
+      category: "read_sentence"
+      language: "cn"  # cn 中文, en 英文
   endpoints:
     asr: "/v1/audio/transcriptions"
     embed: "/v1/audio/embeddings"

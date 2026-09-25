@@ -36,7 +36,7 @@ from typing import Any
 import numpy as np
 
 from .iflytek_asr_client import iFlytekLongASRClient, iFlytekStreamASRClient
-from .types import Segment, Utterance, Word
+from .types import Utterance, Word
 
 logger = logging.getLogger(__name__)
 
@@ -61,21 +61,39 @@ class ModelAPIClient:
         if self.provider == "iflytek":
             iflytek_cfg = api_cfg.get("iflytek", {}) or {}
             mode = str(iflytek_cfg.get("mode", "long")).strip().lower()
+            app_id = self._resolve_secret(
+                iflytek_cfg.get("app_id", ""), iflytek_cfg.get("app_id_env")
+            )
+            api_key = self._resolve_secret(
+                iflytek_cfg.get("api_key", ""), iflytek_cfg.get("api_key_env")
+            )
+            api_secret = self._resolve_secret(
+                iflytek_cfg.get("api_secret", ""), iflytek_cfg.get("api_secret_env")
+            )
             if mode == "stream":
                 self.iflytek_client = iFlytekStreamASRClient(
-                    app_id=str(iflytek_cfg.get("app_id", "")),
-                    api_key=str(iflytek_cfg.get("api_key", "")),
-                    api_secret=str(iflytek_cfg.get("api_secret", "")),
+                    app_id=app_id,
+                    api_key=api_key,
+                    api_secret=api_secret,
                     language=str(iflytek_cfg.get("language", "zh_cn")),
                     timeout=self.timeout,
                 )
             else:
                 self.iflytek_client = iFlytekLongASRClient(
-                    app_id=str(iflytek_cfg.get("app_id", "")),
-                    api_secret=str(iflytek_cfg.get("api_secret", "")),
+                    app_id=app_id,
+                    api_secret=api_secret,
                     language=str(iflytek_cfg.get("language", "cn")),
                     timeout=self.timeout,
                 )
+
+    @staticmethod
+    def _resolve_secret(value: Any, env_name: str | None) -> str:
+        """优先使用配置值, 为空时回退到环境变量."""
+        if value:
+            return str(value)
+        if env_name:
+            return os.environ.get(env_name, "")
+        return ""
 
     @staticmethod
     def _load_key(env_name: str | None) -> str | None:
@@ -95,9 +113,7 @@ class ModelAPIClient:
     def embed_available(self) -> bool:
         return self.enabled and bool(self.base_url) and bool(self.embed_endpoint)
 
-    def transcribe(
-        self, audio_path: str | Path, language: str | None = None
-    ) -> list[Utterance]:
+    def transcribe(self, audio_path: str | Path, language: str | None = None) -> list[Utterance]:
         """调用 ASR 服务, 返回带时间戳的句子列表."""
         if not self.asr_available:
             raise RuntimeError("ASR API 未启用或未配置 endpoint")

@@ -1,6 +1,7 @@
 """发音分析测试."""
 
 import importlib.util
+from unittest.mock import MagicMock, patch
 
 from src.pronunciation_analyzer import PronunciationAnalyzer
 from src.types import Utterance, Word
@@ -93,3 +94,59 @@ def test_phoneme_check_disabled():
     ]
     result = analyzer.analyze(utterances)
     assert len(result.findings) == 0
+
+
+def _ise_config() -> dict:
+    return {
+        "analysis": {"pronunciation": {"standard_threshold": 80}},
+        "api": {"enabled": True},
+    }
+
+
+def test_ise_scoring_marks_standard(tmp_path):
+    analyzer = PronunciationAnalyzer(_ise_config())
+    fake_client = MagicMock()
+    fake_client.evaluate.return_value = {
+        "overall_score": 90.0,
+        "accuracy_score": 88.0,
+        "fluency_score": 91.0,
+        "integrity_score": 95.0,
+    }
+    utterances = [Utterance(text="你好世界", start=0.0, end=1.5, words=[])]
+
+    with patch("src.pronunciation_analyzer.build_evaluation_client", return_value=fake_client):
+        with patch(
+            "src.pronunciation_analyzer.crop_audio_segment",
+            return_value=tmp_path / "seg.wav",
+        ):
+            result = analyzer.analyze(utterances, audio_path="dummy.wav")
+
+    assert len(result.findings) == 1
+    finding = result.findings[0]
+    assert finding["kind"] == "ise_score"
+    assert finding["overall_score"] == 90.0
+    assert finding["standard"] is True
+    assert "标准" in finding["message"]
+
+
+def test_ise_scoring_marks_not_standard_below_threshold(tmp_path):
+    analyzer = PronunciationAnalyzer(_ise_config())
+    fake_client = MagicMock()
+    fake_client.evaluate.return_value = {
+        "overall_score": 60.0,
+        "accuracy_score": 55.0,
+        "fluency_score": 62.0,
+        "integrity_score": 70.0,
+    }
+    utterances = [Utterance(text="hello", start=0.0, end=1.0, words=[])]
+
+    with patch("src.pronunciation_analyzer.build_evaluation_client", return_value=fake_client):
+        with patch(
+            "src.pronunciation_analyzer.crop_audio_segment",
+            return_value=tmp_path / "seg.wav",
+        ):
+            result = analyzer.analyze(utterances, audio_path="dummy.wav")
+
+    finding = result.findings[0]
+    assert finding["standard"] is False
+    assert "不标准" in finding["message"]
