@@ -1,0 +1,14 @@
+{
+  "change": "mvp-asr-iflytek",
+  "phase": "design",
+  "mode": "compact",
+  "canonical_spec": "openspec",
+  "task_hash_policy": "task-content-v1",
+  "generated_by": "comet-handoff.sh",
+  "context_hash": "7043bf33dad70e1a3529f68b6f8bfa506598d981c26e5f52822b8312b2c5c6d5",
+  "files": [
+    { "path": "openspec/changes/mvp-asr-iflytek/proposal.md", "sha256": "7e1e719067c5c64f60ebea56072ba6c506e8a4848014e7c5b9a3d55ca858a65c" },
+    { "path": "openspec/changes/mvp-asr-iflytek/design.md", "sha256": "a148a379c33f011294499f4447c02d5623f47b1d77ec1008fac170c93efd9386" },
+    { "path": "openspec/changes/mvp-asr-iflytek/tasks.md", "sha256": "a8643923031bc4d63119cedc789e1fb3a234124f09199cd69fc8e14037157d23" }
+  ]
+}

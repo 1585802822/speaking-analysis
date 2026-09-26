@@ -1,4 +1,4 @@
-"""ASR 转写（Model API Gateway + faster-whisper 本地回退）."""
+"""ASR 转写（Model API Gateway / 讯飞开放平台, 仅 API 未启用时才用本地模型）."""
 
 from __future__ import annotations
 
@@ -20,13 +20,12 @@ logger = logging.getLogger(__name__)
 class Transcriber:
     """ASR 转写器.
 
-    优先调用 Model API Gateway; 未启用或失败时自动回退到 faster-whisper,
-    再不可用时返回占位结果, 保证流水线可继续运行.
+    当 ``api.enabled`` 为 true 时, 只走 ASR API（讯飞或统一网关）;
+    API 未配置或调用失败时直接抛出异常, 不回退到本地 faster-whisper.
+    仅当 ``api.enabled`` 为 false 时才加载本地模型.
     """
 
-    def __init__(
-        self, config: dict[str, Any], *, auto_load_model: bool = True
-    ) -> None:
+    def __init__(self, config: dict[str, Any], *, auto_load_model: bool = True) -> None:
         self.config = config
         asr_cfg = config.get("asr", {})
         self.model_name = asr_cfg.get("model", "large-v3")
@@ -42,8 +41,8 @@ class Transcriber:
         self.model: Any | None = None
         self.api_client = ModelAPIClient(config)
 
-        # 只有 API 不可用时才提前加载本地模型
-        if auto_load_model and not self.api_client.asr_available:
+        # 仅当 API 未启用时才加载本地模型
+        if auto_load_model and not self.api_client.enabled:
             self._load_local_model()
 
     def _load_local_model(self) -> None:
@@ -73,12 +72,14 @@ class Transcriber:
 
         merged_segments = self._merge_segments(user_segments)
 
-        # 1) 优先 API
-        if self.api_client.asr_available:
-            try:
-                return self._transcribe_with_api(audio_path, merged_segments)
-            except Exception as exc:
-                logger.warning("ASR API 调用失败，回退本地模型: %s", exc)
+        # 1) API 启用时必须走 API, 失败直接抛出异常（不降级）
+        if self.api_client.enabled:
+            if not self.api_client.asr_available:
+                raise RuntimeError(
+                    "API 已启用但 ASR 未正确配置（缺少讯飞 app_id/api_secret 或网关 endpoint），"
+                    "请检查 .env 或 config.yaml 后重试。"
+                )
+            return self._transcribe_with_api(audio_path, merged_segments)
 
         # 2) 本地 faster-whisper（仅在初始化时已加载才使用）
         if self.model is None:
@@ -93,10 +94,7 @@ class Transcriber:
                     )
                 )
         else:
-            batch = [
-                self._transcribe_cropped_segment(audio_path, seg)
-                for seg in merged_segments
-            ]
+            batch = [self._transcribe_cropped_segment(audio_path, seg) for seg in merged_segments]
 
         utterances: list[Utterance] = []
         for item in batch:
@@ -140,9 +138,7 @@ class Transcriber:
             utterances.extend(item)
         return utterances
 
-    def _merge_segments(
-        self, segments: list[Segment], gap_sec: float = 0.5
-    ) -> list[Segment]:
+    def _merge_segments(self, segments: list[Segment], gap_sec: float = 0.5) -> list[Segment]:
         """合并间隔较小的相邻用户片段，减少模型调用次数."""
         sorted_segments = sorted(segments, key=lambda s: s.start)
         merged: list[Segment] = []
@@ -181,9 +177,7 @@ class Transcriber:
         sf.write(str(tmp_path), y, self.sample_rate)
         return tmp_path
 
-    def _transcribe_cropped_segment(
-        self, audio_path: Path, segment: Segment
-    ) -> list[Utterance]:
+    def _transcribe_cropped_segment(self, audio_path: Path, segment: Segment) -> list[Utterance]:
         """裁剪出单个用户语音区间并调用 faster-whisper 转写."""
         tmp_path = self._crop_to_wav(audio_path, segment)
         if tmp_path is None:

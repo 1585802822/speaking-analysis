@@ -21,9 +21,7 @@ class Reporter:
         corrections_path = self.output_dir / f"{stem}_corrections.json"
         md_path.write_text(self._render_markdown(result), encoding="utf-8")
         json_path.write_text(self._render_json(result), encoding="utf-8")
-        corrections_path.write_text(
-            self._render_corrections(result, stem), encoding="utf-8"
-        )
+        corrections_path.write_text(self._render_corrections(result, stem), encoding="utf-8")
 
     def _render_markdown(self, result: ProcessingResult) -> str:
         lines = [
@@ -33,23 +31,22 @@ class Reporter:
             f"- 时长：{result.duration_sec:.1f} 秒",
             f"- 识别到的用户语音：{result.user_speech_sec:.1f} 秒",
             "",
-            "## 详细发现",
+            "## 发音评测结果",
         ]
         for analysis in result.analyses:
             lines.append(f"\n### {analysis.dimension}")
             lines.append(analysis.summary)
             for finding in analysis.findings:
-                lines.append(f"- {finding}")
+                if isinstance(finding, dict) and finding.get("message"):
+                    lines.append(f"- {finding['message']}")
+                else:
+                    lines.append(f"- {finding}")
         if result.low_confidence_segments:
             lines.append("\n## 低置信度片段（请确认是否为用户本人）")
             for seg in result.low_confidence_segments:
-                lines.append(
-                    f"- {seg.start:.2f}s - {seg.end:.2f}s (置信度: {seg.confidence:.2f})"
-                )
+                lines.append(f"- {seg.start:.2f}s - {seg.end:.2f}s (置信度: {seg.confidence:.2f})")
             lines.append("\n## 声纹纠偏反馈")
-            lines.append(
-                "以下片段置信度较低, 请使用 CLI 确认或否认, 以增量优化声纹模型:"
-            )
+            lines.append("以下片段置信度较低, 请使用 CLI 确认或否认, 以增量优化声纹模型:")
             lines.append("```bash")
             for seg in result.low_confidence_segments:
                 lines.append(
@@ -57,9 +54,7 @@ class Reporter:
                     f"--confirm {seg.start:.2f},{seg.end:.2f}"
                 )
             lines.append("```")
-            lines.append(
-                "若某片段不是您本人, 请将 `--confirm` 替换为 `--deny` 并执行。"
-            )
+            lines.append("若某片段不是您本人, 请将 `--confirm` 替换为 `--deny` 并执行。")
         return "\n".join(lines)
 
     def _render_json(self, result: ProcessingResult) -> str:
@@ -74,8 +69,7 @@ class Reporter:
                         "start": u.start,
                         "end": u.end,
                         "words": [
-                            {"text": w.text, "start": w.start, "end": w.end}
-                            for w in u.words
+                            {"text": w.text, "start": w.start, "end": w.end} for w in u.words
                         ],
                     }
                     for u in result.utterances
@@ -120,7 +114,6 @@ class Reporter:
         if not result.low_confidence_segments:
             return ""
         confirms = " ".join(
-            f"--confirm {s.start:.2f},{s.end:.2f}"
-            for s in result.low_confidence_segments
+            f"--confirm {s.start:.2f},{s.end:.2f}" for s in result.low_confidence_segments
         )
         return f"speaking-analysis correct {result.audio_path} {confirms}"

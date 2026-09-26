@@ -2,7 +2,8 @@
 
 - iFlytekLongASRClient: 录音文件转写（标准版）, 上传 -> 轮询 -> 解析.
 - iFlytekStreamASRClient: 语音听写（流式版）, WebSocket 流式听写, 长音频自动切片.
-两者均输出项目统一的 Utterance/Word 类型.
+- iFlytekLlmASRClient: 录音文件转写（大模型版, Ifasr_llm）, 上传 -> 轮询 -> 解析.
+三者均输出项目统一的 Utterance/Word 类型.
 """
 
 from __future__ import annotations
@@ -12,11 +13,15 @@ import hashlib
 import hmac
 import json
 import logging
+import os
+import random
+import string
 import time
+from datetime import datetime, timedelta
 from email.utils import formatdate
 from pathlib import Path
 from typing import Any
-from urllib.parse import urlencode
+from urllib.parse import quote_plus, urlencode
 
 import requests
 
@@ -26,7 +31,7 @@ logger = logging.getLogger(__name__)
 
 
 class iFlytekLongASRClient:
-    """讯飞长音频转写客户端.
+    """讯飞长音频转写客户端（标准版）.
 
     文档: https://www.xfyun.cn/doc/asr/long_audio_transcription/API.html
     """
@@ -50,9 +55,7 @@ class iFlytekLongASRClient:
     def configured(self) -> bool:
         return bool(self.app_id) and bool(self.api_secret)
 
-    def transcribe(
-        self, audio_path: str | Path, language: str | None = None
-    ) -> list[Utterance]:
+    def transcribe(self, audio_path: str | Path, language: str | None = None) -> list[Utterance]:
         """转写音频文件, 返回带词级时间戳的句子列表."""
         audio_path = Path(audio_path)
         lang = self._resolve_language(language or self.language)
@@ -186,7 +189,8 @@ class iFlytekLongASRClient:
             raise RuntimeError("讯飞 ASR 响应数据格式错误")
         return data
 
-    def _parse_result(self, payload: dict[str, Any]) -> list[Utterance]:
+    @staticmethod
+    def _parse_result(payload: dict[str, Any]) -> list[Utterance]:
         """解析 orderResult/lattice/json_1best/st/rt/ws/cw 结构."""
         order_result_raw = payload.get("orderResult")
         if not order_result_raw:
@@ -251,6 +255,198 @@ class iFlytekLongASRClient:
         return utterances
 
 
+class iFlytekLlmASRClient:
+    """讯飞录音文件转写（大模型版, Ifasr_llm）客户端.
+
+    流程: POST /v2/upload 上传音频获取 orderId -> 轮询 POST /v2/getResult
+    直到转写完成 -> 解析 lattice/json_1best 结果.
+
+    鉴权（HMAC-SHA1）: 对请求参数（除 signature 外）按参数名自然排序, 对 key/value
+    分别做标准 URL 编码后用 & 连接成 baseString, 以 api_secret 为密钥做 HMAC-SHA1,
+    结果 base64 后放入请求头 signature. 上传与查询必须使用同一个 signatureRandom.
+
+    文档: https://www.xfyun.cn/doc/spark/asr_llm/Ifasr_llm.html
+    """
+
+    BASE_URL = "https://office-api-ist-dx.iflyaisol.com"
+    UPLOAD_URL = f"{BASE_URL}/v2/upload"
+    RESULT_URL = f"{BASE_URL}/v2/getResult"
+    SUCCESS_CODE = "000000"
+
+    def __init__(
+        self,
+        app_id: str,
+        api_key: str,
+        api_secret: str,
+        language: str = "autodialect",
+        timeout: int = 120,
+    ) -> None:
+        self.app_id = app_id
+        self.api_key = api_key  # 即接口参数 accessKeyId
+        self.api_secret = api_secret
+        self.language = language
+        self.timeout = timeout
+
+    @property
+    def configured(self) -> bool:
+        return bool(self.app_id) and bool(self.api_key) and bool(self.api_secret)
+
+    def transcribe(self, audio_path: str | Path, language: str | None = None) -> list[Utterance]:
+        """转写音频文件, 返回带词级时间戳的句子列表."""
+        audio_path = Path(audio_path)
+        lang = language or self.language
+        # 上传与查询必须使用同一个 signatureRandom, 保证请求关联性
+        signature_random = self._random_signature()
+        order_id = self._upload(audio_path, lang, signature_random)
+        payload = self._poll_result(order_id, signature_random)
+        return iFlytekLongASRClient._parse_result(payload)
+
+    @staticmethod
+    def _random_signature(length: int = 16) -> str:
+        """生成 16 位大小写字母+数字的随机串."""
+        alphabet = string.ascii_letters + string.digits
+        return "".join(random.choice(alphabet) for _ in range(length))
+
+    @staticmethod
+    def _local_datetime() -> str:
+        """返回本地时间, 格式 yyyy-MM-dd'T'HH:mm:ss±HHmm（如 2025-09-08T22:58:29+0800）."""
+        now = datetime.now().astimezone()
+        offset = now.utcoffset() or timedelta(0)
+        sign = "+" if offset >= timedelta(0) else "-"
+        total_sec = int(abs(offset).total_seconds())
+        hours, minutes = total_sec // 3600, (total_sec % 3600) // 60
+        return now.strftime("%Y-%m-%dT%H:%M:%S") + f"{sign}{hours:02d}{minutes:02d}"
+
+    @staticmethod
+    def _build_base_string(params: dict[str, Any]) -> str:
+        """构造签名基础串: 按 key 排序 -> key/value 各自 URL 编码 -> & 连接."""
+        items: list[str] = []
+        for key in sorted(params):
+            value = params[key]
+            if value is None or value == "":
+                continue
+            items.append(f"{quote_plus(str(key), safe='')}={quote_plus(str(value), safe='')}")
+        return "&".join(items)
+
+    def _make_signature(self, params: dict[str, Any]) -> str:
+        """对请求参数做 HMAC-SHA1 签名并 base64."""
+        base_string = self._build_base_string(params)
+        digest = hmac.new(
+            self.api_secret.encode("utf-8"),
+            base_string.encode("utf-8"),
+            hashlib.sha1,
+        ).digest()
+        return base64.b64encode(digest).decode("utf-8")
+
+    @staticmethod
+    def _build_query_url(base_url: str, params: dict[str, Any]) -> str:
+        """把参数拼到 URL 查询串（值需 URL 编码）."""
+        return f"{base_url}?{urlencode(params)}"
+
+    def _upload(self, audio_path: Path, language: str, signature_random: str) -> str:
+        """上传音频文件, 返回 orderId."""
+        file_size = audio_path.stat().st_size
+        params: dict[str, Any] = {
+            "appId": self.app_id,
+            "accessKeyId": self.api_key,
+            "dateTime": self._local_datetime(),
+            "signatureRandom": signature_random,
+            "fileSize": str(file_size),
+            "fileName": audio_path.name,
+            "durationCheckDisable": "true",
+            "audioMode": "fileStream",
+            "language": language,
+        }
+        signature = self._make_signature(params)
+        url = self._build_query_url(self.UPLOAD_URL, params)
+        headers = {
+            "Content-Type": "application/octet-stream",
+            "signature": signature,
+        }
+        with open(audio_path, "rb") as f:
+            audio_bytes = f.read()
+        resp = requests.post(url, headers=headers, data=audio_bytes, timeout=self.timeout)
+        resp.raise_for_status()
+        payload = self._parse_response(resp.json())
+        order_id = payload.get("orderId")
+        if not order_id:
+            raise RuntimeError("讯飞 ASR（大模型版）上传失败：响应中未返回 orderId")
+        return str(order_id)
+
+    def _poll_result(self, order_id: str, signature_random: str) -> dict[str, Any]:
+        """轮询转写结果, 直到完成或失败."""
+        deadline = time.time() + self.timeout
+        while time.time() < deadline:
+            params: dict[str, Any] = {
+                "accessKeyId": self.api_key,
+                "dateTime": self._local_datetime(),
+                "signatureRandom": signature_random,
+                "orderId": order_id,
+                "resultType": "transfer",
+            }
+            signature = self._make_signature(params)
+            url = self._build_query_url(self.RESULT_URL, params)
+            headers = {
+                "Content-Type": "application/json",
+                "signature": signature,
+            }
+            resp = requests.post(url, headers=headers, json={}, timeout=self.timeout)
+            resp.raise_for_status()
+            payload = self._parse_response(resp.json())
+
+            order_info = payload.get("orderInfo") or {}
+            status = order_info.get("status")
+            fail_type = order_info.get("failType", 0)
+            if fail_type not in (0, "0"):
+                raise RuntimeError(f"讯飞 ASR（大模型版）转写异常：failType={fail_type}")
+            if status in (4, "4"):
+                return payload
+            if status in (-1, "-1"):
+                raise RuntimeError("讯飞 ASR（大模型版）转写失败")
+
+            logger.debug("讯飞 ASR（大模型版）转写中, orderId=%s, status=%s", order_id, status)
+            time.sleep(2.0)
+
+        raise RuntimeError("讯飞 ASR（大模型版）转写超时")
+
+    def _parse_response(self, response: dict[str, Any]) -> dict[str, Any]:
+        """解析 LLM 版响应, 校验 code 并返回 content 业务数据."""
+        code = response.get("code")
+        if str(code) != self.SUCCESS_CODE:
+            desc = response.get("descInfo") or "未知错误"
+            raise RuntimeError(f"讯飞 ASR（大模型版）接口错误：{desc} (code={code})")
+        content = response.get("content")
+        if not isinstance(content, dict):
+            raise RuntimeError("讯飞 ASR（大模型版）响应缺少 content")
+        return content
+
+
+def build_llm_asr_client(config: dict[str, Any]) -> iFlytekLlmASRClient | None:
+    """根据配置构建 Ifasr_llm 客户端, 未配置完整时返回 None.
+
+    密钥优先从环境变量读取（app_id_env / api_key_env / api_secret_env）,
+    其次用配置里的明文值.
+    """
+    api_cfg = config.get("api", {}) or {}
+    iflytek_cfg = api_cfg.get("iflytek", {}) or {}
+
+    def _resolve(value: Any, env_name: str | None) -> str:
+        if value:
+            return str(value)
+        if env_name:
+            return os.environ.get(env_name, "")
+        return ""
+
+    client = iFlytekLlmASRClient(
+        app_id=_resolve(iflytek_cfg.get("app_id"), iflytek_cfg.get("app_id_env")),
+        api_key=_resolve(iflytek_cfg.get("api_key"), iflytek_cfg.get("api_key_env")),
+        api_secret=_resolve(iflytek_cfg.get("api_secret"), iflytek_cfg.get("api_secret_env")),
+        language=str(iflytek_cfg.get("language", "autodialect")),
+        timeout=int(api_cfg.get("timeout", 120)),
+    )
+    return client if client.configured else None
+
+
 class iFlytekStreamASRClient:
     """讯飞语音听写（流式版）WebSocket 客户端.
 
@@ -287,9 +483,7 @@ class iFlytekStreamASRClient:
     def configured(self) -> bool:
         return bool(self.app_id) and bool(self.api_key) and bool(self.api_secret)
 
-    def transcribe(
-        self, audio_path: str | Path, language: str | None = None
-    ) -> list[Utterance]:
+    def transcribe(self, audio_path: str | Path, language: str | None = None) -> list[Utterance]:
         """转写音频文件, 长音频自动切块, 返回带词级时间戳的句子列表."""
         import librosa
         import numpy as np
@@ -310,9 +504,7 @@ class iFlytekStreamASRClient:
     def _build_url(self) -> str:
         """按文档生成带鉴权参数的 WebSocket URL（HMAC-SHA256 签名）."""
         date = formatdate(timeval=None, localtime=False, usegmt=True)
-        signature_origin = (
-            f"host: {self.WS_HOST}\ndate: {date}\nGET /v2/iat HTTP/1.1"
-        )
+        signature_origin = f"host: {self.WS_HOST}\ndate: {date}\nGET /v2/iat HTTP/1.1"
         signature_sha = hmac.new(
             self.api_secret.encode("utf-8"),
             signature_origin.encode("utf-8"),
@@ -323,9 +515,7 @@ class iFlytekStreamASRClient:
             f'api_key="{self.api_key}", algorithm="hmac-sha256", '
             f'headers="host date request-line", signature="{signature}"'
         )
-        authorization = base64.b64encode(
-            authorization_origin.encode("utf-8")
-        ).decode("utf-8")
+        authorization = base64.b64encode(authorization_origin.encode("utf-8")).decode("utf-8")
         params = {
             "authorization": authorization,
             "date": date,
@@ -333,9 +523,7 @@ class iFlytekStreamASRClient:
         }
         return f"{self.WS_URL}?{urlencode(params)}"
 
-    def _transcribe_chunk(
-        self, pcm: bytes, offset: float, language: str
-    ) -> list[Utterance]:
+    def _transcribe_chunk(self, pcm: bytes, offset: float, language: str) -> list[Utterance]:
         """对单块 PCM 音频建立一次 WebSocket 会话并返回识别结果."""
         import websocket
 
@@ -370,9 +558,7 @@ class iFlytekStreamASRClient:
                     time.sleep(self.frame_interval)
             # 发送结束标识
             ws.send(
-                json.dumps(
-                    {"data": {"status": 2, "format": fmt, "encoding": "raw", "audio": ""}}
-                )
+                json.dumps({"data": {"status": 2, "format": fmt, "encoding": "raw", "audio": ""}})
             )
             results = self._recv_results(ws)
         finally:
@@ -411,9 +597,7 @@ class iFlytekStreamASRClient:
         return results
 
     @staticmethod
-    def _parse_results(
-        results: list[dict[str, Any]], offset: float
-    ) -> list[Utterance]:
+    def _parse_results(results: list[dict[str, Any]], offset: float) -> list[Utterance]:
         """解析 ws/cw 结果为 Utterance, 支持动态修正的 apd/rpl 语义."""
         # 按 sn 去重/替换, 兼容开启动态修正（dwa=wpgs）时的结果修正
         segments: dict[int, dict[str, Any]] = {}

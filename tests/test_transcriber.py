@@ -1,7 +1,7 @@
 """ASR 转写模块单元测试."""
 
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -115,7 +115,8 @@ def test_api_success_uses_gateway_result():
     transcriber.api_client.transcribe.assert_called_once()
 
 
-def test_api_failure_falls_back_to_local():
+def test_api_failure_raises_without_fallback():
+    """API 启用时调用失败应直接抛出异常, 不回退到本地模型."""
     config = _api_config()
     transcriber = Transcriber(config)
     transcriber.model = None
@@ -125,7 +126,17 @@ def test_api_failure_falls_back_to_local():
     transcriber.api_client.transcribe = MagicMock(side_effect=RuntimeError("API down"))  # type: ignore[method-assign]
 
     segments = [Segment(start=0.0, end=1.0)]
-    result = transcriber.transcribe_user_segments(Path("dummy.wav"), segments)
+    with pytest.raises(RuntimeError, match="API down"):
+        transcriber.transcribe_user_segments(Path("dummy.wav"), segments)
 
-    assert len(result) == 1
-    assert "占位" in result[0].text
+
+def test_api_enabled_but_not_configured_raises():
+    """API 启用但未配置 endpoint 时应直接报错."""
+    config = _api_config()
+    config["api"]["endpoints"] = {"asr": ""}  # 清空 asr endpoint
+    transcriber = Transcriber(config)
+    transcriber.model = None
+
+    segments = [Segment(start=0.0, end=1.0)]
+    with pytest.raises(RuntimeError, match="未正确配置"):
+        transcriber.transcribe_user_segments(Path("dummy.wav"), segments)
