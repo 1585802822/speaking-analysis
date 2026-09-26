@@ -1,6 +1,6 @@
 workflow: full
 language: zh-CN
-phase: build
+phase: archive
 context_compression: off
 build_mode: executing-plans
 build_pause: null
@@ -13,7 +13,7 @@ auto_transition: true
 base_ref: bb5ed378975dbbd1c6ccac52f4a7ffa0df200506
 design_doc: docs/superpowers/design/mvp-asr-iflytek.md
 plan: docs/superpowers/plans/mvp-asr-iflytek-plan.md
-verify_result: pending
+verify_result: pass
 verify_failures: 0
 verification_report: null
 branch_status: pending
@@ -21,10 +21,11 @@ created_at: 2026-09-24
 verified_at: null
 archive_confirmation: null
 archived: false
-bound_branch: feat/mvp-asr-iflytek
+bound_branch: master
 direct_override: false
 handoff_context: openspec/changes/mvp-asr-iflytek/.comet/handoff/design-context.json
 handoff_hash: 7043bf33dad70e1a3529f68b6f8bfa506598d981c26e5f52822b8312b2c5c6d5
 classic_profile: full
 classic_migration: 1
 run_id: b0264451-d446-488b-9473-39d0024f9358
+check_epoch: 1

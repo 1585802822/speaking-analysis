@@ -34,4 +34,4 @@
 
 ## Archive
 
-- [ ] 合并分支并归档 change <!-- comet-task:6f63f719-cb28-4975-ae93-1c6a3a754e9e -->
+- [x] 合并分支并归档 change <!-- comet-task:6f63f719-cb28-4975-ae93-1c6a3a754e9e -->
