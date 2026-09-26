@@ -7,6 +7,21 @@
 
 ## [Unreleased]
 
+### 新增
+
+- ASR 切换为讯飞「录音文件转写大模型版」（Ifasr_llm）：新增 `iFlytekLlmASRClient` 与工厂 `build_llm_asr_client`，走 `上传音频获取 orderId → 轮询 getResult` 流程，HMAC-SHA1 签名；`api.iflytek.mode` 新增 `llm`。
+- 发音评测新增讯飞「Spark VAA 语音分析」可选实现 `iFlytekVoiceInsightClient`（`src/iflytek_evaluation_client.py`），走 `创建任务 → 轮询结果` 流程，HMAC-SHA256 鉴权；`evaluation.mode` 新增 `voice_insight` 选项（默认仍为 `ise`）。
+- 新增实测脚本 `scripts/test_iflytek_live.py`（Ifasr_llm + Spark VAA）与 `scripts/test_ise_live.py`（Ifasr_llm + ISE，已从流式版 ASR 切换为 Ifasr_llm）。
+
+### 变更
+
+- `config.yaml` 默认 `iflytek.mode: llm`、`language: autodialect`（中英+方言自动识别）；`evaluation.mode` 默认 `ise`（`model_code: xdeepseekv31` 为 voice_insight 备选）。
+- `.env.example` 补充说明：app_id / api_key / api_secret 三者复用同一套凭证，服务器靠不同 host+path 区分服务。
+
+### 说明
+
+- Spark VAA 只接收音频外链 `audioFileURL`，本地文件需先转成公网可访问的 URL（普通内网机器需自行解决外链/内网穿透），故默认评测仍走 ISE。
+
 ## [0.2.0] - 2026-09-24
 
 ### 新增

@@ -1,0 +1,16 @@
+{
+  "name": "speaking-analysis",
+  "version": "1.0.0",
+  "description": "本地运行的日常录音分析工具，帮助用户通过分析自己的录音发现表达问题。",
+  "license": "ISC",
+  "author": "",
+  "type": "commonjs",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs",
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  }
+}

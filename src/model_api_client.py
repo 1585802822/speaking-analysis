@@ -35,7 +35,11 @@ from typing import Any
 
 import numpy as np
 
-from .iflytek_asr_client import iFlytekLongASRClient, iFlytekStreamASRClient
+from .iflytek_asr_client import (
+    iFlytekLlmASRClient,
+    iFlytekLongASRClient,
+    iFlytekStreamASRClient,
+)
 from .types import Utterance, Word
 
 logger = logging.getLogger(__name__)
@@ -57,7 +61,9 @@ class ModelAPIClient:
         self.asr_endpoint = str(endpoints.get("asr", "")).lstrip("/")
         self.embed_endpoint = str(endpoints.get("embed", "")).lstrip("/")
         self.provider = str(api_cfg.get("provider", "gateway")).strip().lower()
-        self.iflytek_client: iFlytekLongASRClient | iFlytekStreamASRClient | None = None
+        self.iflytek_client: (
+            iFlytekLongASRClient | iFlytekStreamASRClient | iFlytekLlmASRClient | None
+        ) = None
         if self.provider == "iflytek":
             iflytek_cfg = api_cfg.get("iflytek", {}) or {}
             mode = str(iflytek_cfg.get("mode", "long")).strip().lower()
@@ -76,6 +82,14 @@ class ModelAPIClient:
                     api_key=api_key,
                     api_secret=api_secret,
                     language=str(iflytek_cfg.get("language", "zh_cn")),
+                    timeout=self.timeout,
+                )
+            elif mode == "llm":
+                self.iflytek_client = iFlytekLlmASRClient(
+                    app_id=app_id,
+                    api_key=api_key,
+                    api_secret=api_secret,
+                    language=str(iflytek_cfg.get("language", "autodialect")),
                     timeout=self.timeout,
                 )
             else:

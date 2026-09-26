@@ -355,3 +355,17 @@ def test_iflytek_stream_wpgs_replace(tmp_path: Path):
     assert len(result) == 1
     assert result[0].text == "你好，"
     assert result[0].start == pytest.approx(0.1)
+
+
+def test_iflytek_llm_mode_builds_llm_client():
+    from src.iflytek_asr_client import iFlytekLlmASRClient
+
+    cfg = _iflytek_config(app_id="app", api_secret="secret")
+    cfg["api"]["iflytek"]["mode"] = "llm"
+    cfg["api"]["iflytek"]["api_key"] = "key"
+    cfg["api"]["iflytek"]["language"] = "autodialect"
+    client = ModelAPIClient(cfg)
+
+    assert client.asr_available
+    assert isinstance(client.iflytek_client, iFlytekLlmASRClient)
+    assert client.iflytek_client.language == "autodialect"
