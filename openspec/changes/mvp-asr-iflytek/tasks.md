@@ -30,7 +30,7 @@
 ## Verify
 
 - [x] 运行测试套件 <!-- comet-task:0317f314-88ba-4b39-a756-fd545e185120 -->
-- [ ] 使用真实/测试音频验证 CLI 流程 <!-- comet-task:429447d1-0b33-4385-b98f-00f94cfa22c7 -->
+- [x] 使用真实/测试音频验证 CLI 流程 <!-- comet-task:429447d1-0b33-4385-b98f-00f94cfa22c7 -->
 
 ## Archive
 
