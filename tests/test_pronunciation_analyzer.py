@@ -3,6 +3,8 @@
 import importlib.util
 from unittest.mock import MagicMock, patch
 
+import pytest
+
 from src.pronunciation_analyzer import PronunciationAnalyzer
 from src.types import Utterance, Word
 
@@ -127,6 +129,79 @@ def test_ise_scoring_marks_standard(tmp_path):
     assert finding["overall_score"] == 90.0
     assert finding["standard"] is True
     assert "标准" in finding["message"]
+
+
+def test_ise_phone_findings_generated(tmp_path):
+    analyzer = PronunciationAnalyzer(_ise_config())
+    fake_client = MagicMock()
+    fake_client.evaluate.return_value = {
+        "overall_score": 90.0,
+        "accuracy_score": 88.0,
+        "fluency_score": 91.0,
+        "integrity_score": 95.0,
+        "phone_details": [
+            {
+                "word_text": "你",
+                "pinyin": "ni3",
+                "tone": "三声",
+                "phone": "n",
+                "is_yun": 0,
+                "is_correct": True,
+                "error_type": "",
+                "beg_pos": 50,
+                "end_pos": 70,
+                "rec_node_type": "paper",
+            },
+            {
+                "word_text": "你",
+                "pinyin": "ni3",
+                "tone": "三声",
+                "phone": "i",
+                "is_yun": 1,
+                "is_correct": False,
+                "error_type": "调型错",
+                "beg_pos": 50,
+                "end_pos": 70,
+                "rec_node_type": "paper",
+            },
+            {
+                "word_text": "好",
+                "pinyin": "hao3",
+                "tone": "三声",
+                "phone": "ao",
+                "is_yun": 1,
+                "is_correct": True,
+                "error_type": "",
+                "beg_pos": 70,
+                "end_pos": 90,
+                "rec_node_type": "paper",
+            },
+        ],
+    }
+    utterances = [Utterance(text="你好", start=2.0, end=4.0, words=[])]
+
+    with patch("src.pronunciation_analyzer.build_evaluation_client", return_value=fake_client):
+        with patch(
+            "src.pronunciation_analyzer.crop_audio_segment",
+            return_value=tmp_path / "seg.wav",
+        ):
+            result = analyzer.analyze(utterances, audio_path="dummy.wav")
+
+    phone_findings = [f for f in result.findings if f["kind"] == "ise_phone"]
+    assert len(phone_findings) == 1
+    pf = phone_findings[0]
+    assert pf["word_text"] == "你"
+    assert pf["phone"] == "i"
+    assert pf["pinyin"] == "ni3"
+    assert pf["tone"] == "三声"
+    assert pf["is_yun"] == 1
+    assert pf["error_type"] == "调型错"
+    assert pf["is_correct"] is False
+    # beg_pos/end_pos 单位帧（1 帧 = 10ms），换算秒后加句子起始偏移 2.0s
+    assert pf["start"] == pytest.approx(2.0 + 50 * 0.01)
+    assert pf["end"] == pytest.approx(2.0 + 70 * 0.01)
+    assert "音素" in pf["message"]
+    assert "不标准" in pf["message"]
 
 
 def test_ise_scoring_marks_not_standard_below_threshold(tmp_path):

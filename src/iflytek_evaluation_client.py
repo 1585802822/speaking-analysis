@@ -10,7 +10,8 @@
 - 流程: ssb(参数+文本) -> auw(音频帧) -> status=2 结束, 服务端返回评测结果
 
 评测结果可能以嵌套 JSON 或 base64(XML) 返回, 本模块统一提取
-total_score / accuracy_score / phone_score / fluency_score / integrity_score 等分数.
+total_score / accuracy_score / phone_score / fluency_score / integrity_score 等分数,
+并对中文结果进一步解析为**音素级**发音细节（声母/韵母是否正确）。
 """
 
 from __future__ import annotations
@@ -91,6 +92,7 @@ class iFlytekEvaluationClient:
             "accuracy_score": float | None,
             "fluency_score": float | None,
             "integrity_score": float | None,
+            "phone_details": list[dict],
             "raw_response": dict,
         }
         """
@@ -243,7 +245,9 @@ class iFlytekEvaluationClient:
                     return obj
             except (json.JSONDecodeError, ValueError):
                 pass
-            return self._extract_scores_from_xml(decoded)
+            scores = self._extract_scores_from_xml(decoded)
+            scores["_phone_details"] = self._extract_phones_from_xml(decoded)
+            return scores
         return {}
 
     @staticmethod
@@ -270,6 +274,120 @@ class iFlytekEvaluationClient:
                     except ValueError:
                         pass
         return found
+
+    @staticmethod
+    def _split_pinyin(pinyin_no_tone: str) -> tuple[str, str]:
+        """把不带声调的拼音拆成声母和韵母.
+
+        例: ``ni`` -> ``("n", "i")``; ``zhong`` -> ``("zh", "ong")``;
+        ``ang`` -> ``("", "ang")``.
+        """
+        initials = {
+            "b",
+            "p",
+            "m",
+            "f",
+            "d",
+            "t",
+            "n",
+            "l",
+            "g",
+            "k",
+            "h",
+            "j",
+            "q",
+            "x",
+            "zh",
+            "ch",
+            "sh",
+            "r",
+            "z",
+            "c",
+            "s",
+            "y",
+            "w",
+        }
+        for length in (2, 1):
+            if len(pinyin_no_tone) >= length and pinyin_no_tone[:length] in initials:
+                return pinyin_no_tone[:length], pinyin_no_tone[length:]
+        return "", pinyin_no_tone
+
+    @staticmethod
+    def _extract_phones_from_xml(xml_text: str) -> list[dict[str, Any]]:
+        """从 ISE XML 结果中提取音素级发音细节.
+
+        每个 ``<word>`` 下包含若干 ``<syll>``, 每个 ``<syll>`` 下又包含若干
+        ``<phone>`` 元素。本方法直接抽取 ``<phone>`` 层级, 输出每个音素
+        （声母/韵母）是否发音标准。
+
+        解析规则:
+        - ``phone.perr_msg``: 0 无错 / 1 声韵错 / 2 调型错 / 3 声韵调型错
+        - ``phone.is_yun``: 0 声母 / 1 韵母
+        - ``phone.content``: 音素内容（部分返回可能没有, 此时用拼音拆分推断）
+        - 只保留 ``rec_node_type="paper"`` 的有效节点, 忽略 sil/fil 静音噪音
+        """
+        tone_labels = {"1": "一声", "2": "二声", "3": "三声", "4": "四声"}
+        perr_labels = {"1": "声韵错", "2": "调型错", "3": "声韵调型错"}
+
+        try:
+            root = ET.fromstring(xml_text)
+        except ET.ParseError:
+            return []
+
+        phones: list[dict[str, Any]] = []
+        for word in root.iter("word"):
+            word_text = (word.get("content") or "").strip()
+            symbol = word.get("symbol") or ""
+            tone_digit = symbol[-1] if symbol and symbol[-1].isdigit() else ""
+            # 声调末位数字: 1~4 一声~四声, 0 及 5 以上均视为轻声
+            tone = tone_labels.get(tone_digit, "轻声" if tone_digit else "")
+
+            # 拆分拼音为声母/韵母, 用于补充 phone.content 缺失时的可读文本
+            initial, final = "", ""
+            if symbol and symbol[-1].isdigit():
+                initial, final = iFlytekEvaluationClient._split_pinyin(symbol[:-1])
+
+            for syll in word.iter("syll"):
+                for phone in syll.iter("phone"):
+                    rec_node_type = phone.get("rec_node_type") or ""
+                    if rec_node_type != "paper":
+                        continue
+
+                    is_yun = phone.get("is_yun") or ""
+                    phone_content = (phone.get("content") or "").strip()
+
+                    # 优先使用接口返回的音素内容, 缺失时根据 is_yun + 拼音推断
+                    if phone_content:
+                        phone_text = phone_content
+                    elif is_yun == "0" and initial:
+                        phone_text = initial
+                    elif is_yun == "1" and final:
+                        phone_text = final
+                    elif is_yun == "0":
+                        phone_text = "声母"
+                    elif is_yun == "1":
+                        phone_text = "韵母"
+                    else:
+                        phone_text = ""
+
+                    perr = phone.get("perr_msg") or "0"
+                    error_type = perr_labels.get(perr, "")
+
+                    phones.append(
+                        {
+                            "word_text": word_text,
+                            "pinyin": symbol,
+                            "tone": tone,
+                            "phone": phone_text,
+                            "is_yun": int(is_yun) if is_yun.isdigit() else None,
+                            "is_correct": perr == "0",
+                            "error_type": error_type,
+                            "beg_pos": int(phone.get("beg_pos") or word.get("beg_pos") or 0),
+                            "end_pos": int(phone.get("end_pos") or word.get("end_pos") or 0),
+                            "rec_node_type": rec_node_type,
+                        }
+                    )
+        return phones
 
     @staticmethod
     def _entity_for(language: str) -> str:
@@ -302,6 +420,9 @@ class iFlytekEvaluationClient:
             raise RuntimeError(f"讯飞 ISE 评测失败：{desc} (code={code})")
 
         data = payload.get("data") or {}
+        phone_details: list[dict[str, Any]] = []
+        if isinstance(data, dict):
+            phone_details = data.pop("_phone_details", []) or []
         scores = self._collect_scores(data)
 
         return {
@@ -313,6 +434,7 @@ class iFlytekEvaluationClient:
             ),
             "fluency_score": scores.get("fluency_score"),
             "integrity_score": scores.get("integrity_score"),
+            "phone_details": phone_details,
             "raw_response": payload,
         }
 

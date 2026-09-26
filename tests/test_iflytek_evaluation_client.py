@@ -97,6 +97,120 @@ def test_extract_scores_from_xml():
     assert scores["integrity_score"] == 95.0
 
 
+def test_extract_phones_from_xml():
+    xml = (
+        '<?xml version="1.0"?><xml_result>'
+        '<read_sentence total_score="85.0" phone_score="82.0">'
+        '<sentence beg_pos="0" end_pos="40" content="你好" time_len="40">'
+        '<word beg_pos="0" end_pos="20" symbol="ni3" content="你" time_len="20">'
+        '<syll dp_message="0" rec_node_type="paper">'
+        '<phone perr_msg="0" mono_tone="TONE3" is_yun="0" rec_node_type="paper"/>'
+        '<phone perr_msg="2" mono_tone="TONE3" is_yun="1" rec_node_type="paper"/>'
+        "</syll>"
+        "</word>"
+        '<word beg_pos="20" end_pos="40" symbol="hao3" content="好" time_len="20">'
+        '<syll dp_message="0" rec_node_type="paper">'
+        '<phone perr_msg="0" mono_tone="TONE3" is_yun="1" rec_node_type="paper"/>'
+        "</syll>"
+        "</word>"
+        "</sentence>"
+        "</read_sentence></xml_result>"
+    )
+    phones = iFlytekEvaluationClient._extract_phones_from_xml(xml)
+    assert len(phones) == 3
+
+    ni_phones = [p for p in phones if p["word_text"] == "你"]
+    assert len(ni_phones) == 2
+    initial = next(p for p in ni_phones if p["is_yun"] == 0)
+    assert initial["phone"] == "n"
+    assert initial["is_correct"] is True
+    final = next(p for p in ni_phones if p["is_yun"] == 1)
+    assert final["phone"] == "i"
+    assert final["is_correct"] is False
+    assert final["error_type"] == "调型错"
+
+    hao_phone = next(p for p in phones if p["word_text"] == "好")
+    assert hao_phone["phone"] == "ao"
+    assert hao_phone["is_yun"] == 1
+    assert hao_phone["is_correct"] is True
+    assert hao_phone["error_type"] == ""
+
+
+def test_extract_phones_from_xml_ignores_silent_and_noise():
+    xml = (
+        '<?xml version="1.0"?><xml_result>'
+        '<read_sentence total_score="85.0">'
+        '<sentence content="你">'
+        '<word beg_pos="0" end_pos="20" symbol="ni3" content="你">'
+        '<syll dp_message="0" rec_node_type="sil" content="sil">'
+        '<phone perr_msg="2" mono_tone="TONE3" is_yun="0" rec_node_type="sil" content="sil"/>'
+        "</syll>"
+        '<syll dp_message="0" rec_node_type="paper">'
+        '<phone perr_msg="0" mono_tone="TONE3" is_yun="0" rec_node_type="paper"/>'
+        "</syll>"
+        "</word>"
+        "</sentence>"
+        "</read_sentence></xml_result>"
+    )
+    phones = iFlytekEvaluationClient._extract_phones_from_xml(xml)
+    # sil 节点被过滤, 只保留 paper 节点
+    assert len(phones) == 1
+    assert phones[0]["is_correct"] is True
+    assert phones[0]["rec_node_type"] == "paper"
+
+
+def test_evaluate_chinese_parses_phone_details():
+    client = _client()
+    xml = (
+        '<?xml version="1.0"?><xml_result>'
+        '<read_sentence total_score="85.0" phone_score="82.0" '
+        'fluency_score="88.0" integrity_score="90.0">'
+        '<sentence content="你">'
+        '<word beg_pos="10" end_pos="30" symbol="ni3" content="你">'
+        '<syll dp_message="0" rec_node_type="paper">'
+        '<phone perr_msg="0" mono_tone="TONE3" is_yun="0" rec_node_type="paper"/>'
+        '<phone perr_msg="2" mono_tone="TONE3" is_yun="1" rec_node_type="paper"/>'
+        "</syll>"
+        "</word>"
+        "</sentence>"
+        "</read_sentence></xml_result>"
+    )
+    b64 = base64.b64encode(xml.encode("utf-8")).decode("ascii")
+    fake = _FakeWS(
+        [json.dumps({"code": 0, "message": "success", "data": {"status": 2, "data": b64}})]
+    )
+    with patch.object(client, "_read_pcm", return_value=b"\x00\x00" * 640):
+        with patch("websocket.create_connection", return_value=fake):
+            result = client.evaluate("dummy.wav", "你", language="cn")
+
+    assert result["phone_details"] == [
+        {
+            "word_text": "你",
+            "pinyin": "ni3",
+            "tone": "三声",
+            "phone": "n",
+            "is_yun": 0,
+            "is_correct": True,
+            "error_type": "",
+            "beg_pos": 10,
+            "end_pos": 30,
+            "rec_node_type": "paper",
+        },
+        {
+            "word_text": "你",
+            "pinyin": "ni3",
+            "tone": "三声",
+            "phone": "i",
+            "is_yun": 1,
+            "is_correct": False,
+            "error_type": "调型错",
+            "beg_pos": 10,
+            "end_pos": 30,
+            "rec_node_type": "paper",
+        },
+    ]
+
+
 def test_normalize_result_maps_scores():
     payload = {
         "code": "0",

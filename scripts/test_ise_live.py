@@ -104,6 +104,7 @@ def evaluate_one(
         result["accuracy"] = scores.get("accuracy_score")
         result["fluency"] = scores.get("fluency_score")
         result["integrity"] = scores.get("integrity_score")
+        result["phone_details"] = scores.get("phone_details") or []
         overall = result["overall"]
         result["standard"] = (
             "标准" if overall is not None and overall >= standard_threshold else "不标准"
@@ -170,6 +171,13 @@ def main() -> int:
                 f" | 流利度 {fmt_score(res['fluency'])} | 完整度 {fmt_score(res['integrity'])}"
                 f"  -> {res['standard']}"
             )
+            wrong_phones = [p for p in res.get("phone_details", []) if not p.get("is_correct")]
+            if wrong_phones:
+                print(f"    音素级细节（不标准 {len(wrong_phones)} 处）：")
+                for p in wrong_phones:
+                    tone = f"（{p.get('tone')}）" if p.get("tone") else ""
+                    word = f"「{p.get('word_text')}」" if p.get("word_text") else ""
+                    print(f"      {word}音素 {p.get('phone')}{tone} -> {p.get('error_type')}")
         results.append(res)
 
     # 汇总

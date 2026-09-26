@@ -12,6 +12,7 @@
 - ASR 切换为讯飞「录音文件转写大模型版」（Ifasr_llm）：新增 `iFlytekLlmASRClient` 与工厂 `build_llm_asr_client`，走 `上传音频获取 orderId → 轮询 getResult` 流程，HMAC-SHA1 签名；`api.iflytek.mode` 新增 `llm`。
 - 发音评测新增讯飞「Spark VAA 语音分析」可选实现 `iFlytekVoiceInsightClient`（`src/iflytek_evaluation_client.py`），走 `创建任务 → 轮询结果` 流程，HMAC-SHA256 鉴权；`evaluation.mode` 新增 `voice_insight` 选项（默认仍为 `ise`）。
 - 新增实测脚本 `scripts/test_iflytek_live.py`（Ifasr_llm + Spark VAA）与 `scripts/test_ise_live.py`（Ifasr_llm + ISE，已从流式版 ASR 切换为 Ifasr_llm）。
+- 发音评测 ISE 结果改为**音素级发音细节**：中文句子评测结果从 `word` 层级下沉到 `phone` 层级（声母/韵母是否正确），报告与实测脚本可逐音素展示发音不标准的位置（`ise_phone` finding）。
 
 ### 变更
 

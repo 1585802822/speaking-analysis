@@ -1,7 +1,7 @@
 """发音标准/正音分析.
 
 - 优先：调用讯飞语音评测（ISE）API, 对用户片段输出准确度/流利度/完整度分数,
-  判断普通话/英语发音是否标准。
+  并解析中文音素级（声母/韵母）发音细节, 判断普通话/英语发音是否标准。
 - 回退：当未启用 ISE 或未提供音频路径时, 使用 pypinyin/phonemizer 给出
   拼音/音标参考, 对 ASR 低置信度字词给出正音建议。
 """
@@ -112,6 +112,40 @@ class PronunciationAnalyzer:
                 parts.append("（" + "、".join(detail) + "）")
             finding["message"] = " ".join(parts)
             findings.append(finding)
+
+            # 音素级发音细节: 只为不标准的音素生成 finding, 避免报告噪音.
+            # beg_pos/end_pos 单位为帧（1 帧 = 10ms）, 换算成秒后加上句子起始偏移.
+            for ph in scores.get("phone_details") or []:
+                if ph.get("is_correct"):
+                    continue
+                phone_text = (ph.get("phone") or "").strip()
+                word_text = (ph.get("word_text") or "").strip()
+                if not phone_text and not word_text:
+                    continue
+                start = utt.start + int(ph.get("beg_pos") or 0) * 0.01
+                end = utt.start + int(ph.get("end_pos") or 0) * 0.01
+                error_type = ph.get("error_type") or "发音偏差"
+                pinyin = ph.get("pinyin") or ""
+                tone = ph.get("tone") or ""
+                phone_finding: dict[str, Any] = {
+                    "kind": "ise_phone",
+                    "start": start,
+                    "end": end,
+                    "word_text": word_text,
+                    "phone": phone_text,
+                    "pinyin": pinyin,
+                    "tone": tone,
+                    "is_yun": ph.get("is_yun"),
+                    "error_type": error_type,
+                    "is_correct": False,
+                }
+                tone_part = f"（{tone}）" if tone else ""
+                word_part = f"「{word_text}」的" if word_text else ""
+                phone_finding["message"] = (
+                    f"{start:.2f}s {word_part}音素「{phone_text}」发音不标准：{error_type}"
+                    f"{tone_part}，拼音 {pinyin}，建议跟读纠正"
+                )
+                findings.append(phone_finding)
         return findings
 
     def _analyze_local(self, utterances: list[Utterance]) -> list[dict[str, Any]]:
