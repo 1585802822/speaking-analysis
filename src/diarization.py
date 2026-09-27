@@ -20,15 +20,15 @@ class DiarizationModule:
         speaker_cfg = config.get("speaker", {})
         self.similarity_threshold = speaker_cfg.get(
             "similarity_threshold",
-            config.get("preprocessing", {}).get("speaker_filter", {}).get(
-                "similarity_threshold", 0.75
-            ),
+            config.get("preprocessing", {})
+            .get("speaker_filter", {})
+            .get("similarity_threshold", 0.75),
         )
         self.low_confidence_threshold = speaker_cfg.get(
             "low_confidence_threshold",
-            config.get("preprocessing", {}).get("speaker_filter", {}).get(
-                "low_confidence_threshold", 0.55
-            ),
+            config.get("preprocessing", {})
+            .get("speaker_filter", {})
+            .get("low_confidence_threshold", 0.55),
         )
         self.parallel_workers = max(
             1,
@@ -54,7 +54,10 @@ class DiarizationModule:
         return float(np.dot(a, b) / (norm_a * norm_b))
 
     def _extract_segment_embedding(
-        self, seg: Segment, audio_path: str | Path | None, audio_array: tuple[np.ndarray, int] | None = None
+        self,
+        seg: Segment,
+        audio_path: str | Path | None,
+        audio_array: tuple[np.ndarray, int] | None = None,
     ) -> np.ndarray:
         """从音频路径或数组中提取指定片段的嵌入向量.
 
@@ -161,9 +164,7 @@ class DiarizationModule:
                 seg.speaker_label = "user"
             return segments
 
-        similarity_threshold = pre_filter_cfg.get(
-            "similarity_threshold", self.similarity_threshold
-        )
+        similarity_threshold = pre_filter_cfg.get("similarity_threshold", self.similarity_threshold)
         low_confidence_threshold = pre_filter_cfg.get(
             "low_confidence_threshold", self.low_confidence_threshold
         )
@@ -217,11 +218,8 @@ class DiarizationModule:
                 seg.needs_review = True
             return []
 
-        speaker_cfg = self.config.get("speaker", {})
         pre_filter_cfg = self.config.get("preprocessing", {}).get("speaker_filter", {})
-        similarity_threshold = pre_filter_cfg.get(
-            "similarity_threshold", self.similarity_threshold
-        )
+        similarity_threshold = pre_filter_cfg.get("similarity_threshold", self.similarity_threshold)
         low_confidence_threshold = pre_filter_cfg.get(
             "low_confidence_threshold", self.low_confidence_threshold
         )
@@ -237,23 +235,17 @@ class DiarizationModule:
             if seg_end_sample - seg_start_sample < min_seg_samples:
                 continue
             if seg_end_sample - seg_start_sample <= window_samples:
-                windows.append(
-                    Segment(start=seg_start_sample / sr, end=seg_end_sample / sr)
-                )
+                windows.append(Segment(start=seg_start_sample / sr, end=seg_end_sample / sr))
                 continue
             seg_windows: list[Segment] = []
             start = seg_start_sample
             while start + window_samples < seg_end_sample:
-                seg_windows.append(
-                    Segment(start=start / sr, end=(start + window_samples) / sr)
-                )
+                seg_windows.append(Segment(start=start / sr, end=(start + window_samples) / sr))
                 start += hop_samples
             # 尾窗回退补足整窗，避免过短窗口导致嵌入失真、标签抖动
             tail_start = seg_end_sample - window_samples
             if not seg_windows or tail_start > int(seg_windows[-1].start * sr):
-                seg_windows.append(
-                    Segment(start=tail_start / sr, end=seg_end_sample / sr)
-                )
+                seg_windows.append(Segment(start=tail_start / sr, end=seg_end_sample / sr))
             else:
                 seg_windows[-1].end = seg_end_sample / sr
             windows.extend(seg_windows)

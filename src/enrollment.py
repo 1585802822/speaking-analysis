@@ -107,17 +107,13 @@ class EnrollmentManager:
         negative_lr = float(speaker_cfg.get("negative_lr", 0.15))
 
         if positive_samples:
-            pos_embs = np.stack(
-                [self._extract_embedding(p) for p in positive_samples]
-            )
+            pos_embs = np.stack([self._extract_embedding(p) for p in positive_samples])
             pos_mean = pos_embs.mean(axis=0)
             center = center + positive_lr * (pos_mean - center)
 
         negative_samples = negative_samples or []
         if negative_samples:
-            neg_embs = np.stack(
-                [self._extract_embedding(p) for p in negative_samples]
-            )
+            neg_embs = np.stack([self._extract_embedding(p) for p in negative_samples])
             neg_mean = neg_embs.mean(axis=0)
             # 将中心推离负面样本均值, 同时保持单位长度
             push = center - negative_lr * (neg_mean - center)

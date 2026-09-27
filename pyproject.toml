@@ -28,6 +28,8 @@ dependencies = [
     "websocket-client>=1.6",
     "noisereduce>=3.0",
     "silero-vad>=4.0",
+    "fastapi>=0.141.1",
+    "uvicorn[standard]>=0.54.0",
 ]
 
 [dependency-groups]

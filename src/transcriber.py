@@ -1,18 +1,15 @@
-"""ASR 转写（Model API Gateway / 讯飞开放平台, 仅 API 未启用时才用本地模型）."""
+"""ASR 转写：user 句优先走 ASR API，失败回退本地模型；other 句用本地 faster-whisper."""
 
 from __future__ import annotations
 
 import logging
-import tempfile
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import Any
 
-import librosa
-import soundfile as sf
-
+from .audio_adapter import crop_for_api
 from .model_api_client import ModelAPIClient
-from .types import Segment, Utterance, Word
+from .types import Segment, SegmentTranscription, Utterance, Word
 
 logger = logging.getLogger(__name__)
 
@@ -20,9 +17,9 @@ logger = logging.getLogger(__name__)
 class Transcriber:
     """ASR 转写器.
 
-    当 ``api.enabled`` 为 true 时, 只走 ASR API（讯飞或统一网关）;
-    API 未配置或调用失败时直接抛出异常, 不回退到本地 faster-whisper.
-    仅当 ``api.enabled`` 为 false 时才加载本地模型.
+    user 句优先走 ASR API（讯飞或统一网关），失败或空结果时回退本地模型；
+    other 句直接使用本地 faster-whisper。
+    本地模型按需懒加载：首次需要本地转写时才加载，服务启动不被大模型拖慢。
     """
 
     def __init__(self, config: dict[str, Any], *, auto_load_model: bool = True) -> None:
@@ -39,11 +36,19 @@ class Transcriber:
             1, int(config.get("segmentation", {}).get("parallel_workers", 1))
         )
         self.model: Any | None = None
+        self._local_model_attempted = False
         self.api_client = ModelAPIClient(config)
 
-        # 仅当 API 未启用时才加载本地模型
+        # API 未启用时提前加载本地模型（如旧版 CLI 流程）；API 启用时走懒加载
         if auto_load_model and not self.api_client.enabled:
-            self._load_local_model()
+            self._ensure_local_model()
+
+    def _ensure_local_model(self) -> None:
+        """懒加载本地模型：只尝试加载一次，失败后走占位回退."""
+        if self.model is not None or self._local_model_attempted:
+            return
+        self._local_model_attempted = True
+        self._load_local_model()
 
     def _load_local_model(self) -> None:
         try:
@@ -101,6 +106,117 @@ class Transcriber:
             utterances.extend(item)
         return utterances
 
+    def transcribe_segments(
+        self,
+        audio_path: Path,
+        segments: list[Segment],
+        recording_id: str,
+    ) -> list[SegmentTranscription]:
+        """按说话人标签为每个句子片段选择 ASR 引擎并转写.
+
+        - ``user`` 片段优先使用 API ASR（付费、准确率高），失败或空结果时回退本地模型
+        - ``other`` 片段使用本地 faster-whisper（首次使用时懒加载）
+        - 每个片段单独转写，保持单句 ↔ 文本一一对应
+        """
+        if not segments:
+            return []
+
+        results: list[SegmentTranscription] = []
+        for seg in segments:
+            if seg.segment_index is None or seg.speaker_label is None:
+                continue
+
+            use_api = seg.speaker_label == "user"
+            transcriptions, error = self._transcribe_one_segment(audio_path, seg, use_api=use_api)
+            asr_source = "api" if use_api else "local"
+
+            if not transcriptions and use_api:
+                # user 句 API 失败/空结果时回退本地模型再试一次
+                api_error = error
+                transcriptions, local_error = self._transcribe_one_segment(
+                    audio_path, seg, use_api=False
+                )
+                asr_source = "local"
+                error = "；".join(e for e in (api_error, local_error) if e) or None
+
+            if not transcriptions:
+                results.append(
+                    SegmentTranscription(
+                        recording_id=recording_id,
+                        segment_index=seg.segment_index,
+                        speaker_label=seg.speaker_label,
+                        asr_source=asr_source,
+                        audio_path=str(audio_path),
+                        start=seg.start,
+                        end=seg.end,
+                        text="",
+                        status="failed",
+                        error_message=error or "转写结果为空",
+                    )
+                )
+                continue
+
+            # 合并同一片段内可能返回的多个 utterance（通常只有一个）
+            text = " ".join(t.text for t in transcriptions).strip()
+            words: list[Word] = []
+            for t in transcriptions:
+                words.extend(t.words)
+
+            results.append(
+                SegmentTranscription(
+                    recording_id=recording_id,
+                    segment_index=seg.segment_index,
+                    speaker_label=seg.speaker_label,
+                    asr_source=asr_source,
+                    audio_path=str(audio_path),
+                    start=seg.start,
+                    end=seg.end,
+                    text=text,
+                    words=words,
+                    error_message=error,
+                )
+            )
+
+        return results
+
+    def _transcribe_one_segment(
+        self, audio_path: Path, segment: Segment, use_api: bool
+    ) -> tuple[list[Utterance], str | None]:
+        """转写单个片段，返回 ``(utterances, error_message)``.
+
+        失败不抛异常：错误信息随返回值带出，由调用方决定是否回退.
+        """
+        tmp_path = self._crop_to_wav(audio_path, segment)
+        if tmp_path is None:
+            return [], "音频裁剪失败"
+        try:
+            if use_api:
+                if not self.api_client.asr_available:
+                    return [], "API ASR 未配置"
+                utterances = self.api_client.transcribe(
+                    tmp_path, language=None if self.language == "auto" else self.language
+                )
+                if not utterances:
+                    return [], "API 转写结果为空"
+                return utterances, None
+            else:
+                self._ensure_local_model()
+                if self.model is None:
+                    # 本地模型不可用时返回占位文本，保持流程不中断
+                    return self._fallback_transcription([segment]), "本地 ASR 模型未加载"
+                utterances = self._run_model(str(tmp_path), offset=0.0)
+                if not utterances:
+                    return [], "本地转写结果为空"
+                return utterances, None
+        except Exception as exc:
+            logger.warning("片段 %s 转写失败: %s", segment.segment_index, exc)
+            return [], f"转写异常: {exc}"
+        finally:
+            try:
+                tmp_path.unlink()
+            except OSError:
+                pass
+
     def _transcribe_with_api(
         self, audio_path: Path, merged_segments: list[Segment]
     ) -> list[Utterance]:
@@ -150,32 +266,13 @@ class Transcriber:
         return merged
 
     def _crop_to_wav(self, audio_path: Path, segment: Segment) -> Path | None:
-        """将音频区间裁剪为临时 WAV 文件."""
-        duration = segment.end - segment.start
-        if duration <= 0:
-            return None
-        try:
-            y, _ = librosa.load(
-                str(audio_path),
-                sr=self.sample_rate,
-                mono=True,
-                offset=segment.start,
-                duration=duration,
-            )
-        except Exception as exc:
-            logger.warning(
-                "裁剪音频失败 %s [%s-%s]: %s",
-                audio_path,
-                segment.start,
-                segment.end,
-                exc,
-            )
-            return None
-        if len(y) == 0:
-            return None
-        tmp_path = Path(tempfile.mktemp(suffix=".wav"))
-        sf.write(str(tmp_path), y, self.sample_rate)
-        return tmp_path
+        """将音频区间裁剪为 API 要求的临时 WAV 文件（16kHz 单声道）."""
+        return crop_for_api(
+            audio_path,
+            segment.start,
+            segment.end,
+            target_sr=self.sample_rate,
+        )
 
     def _transcribe_cropped_segment(self, audio_path: Path, segment: Segment) -> list[Utterance]:
         """裁剪出单个用户语音区间并调用 faster-whisper 转写."""

@@ -18,7 +18,6 @@ from pathlib import Path
 from typing import Any
 
 import librosa
-import numpy as np
 
 # 确保从项目根目录导入 src 包
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))

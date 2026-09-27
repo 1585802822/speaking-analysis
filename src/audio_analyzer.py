@@ -126,7 +126,9 @@ class AudioAnalyzer:
                     )
         return findings
 
-    def _analyze_clarity(self, y: np.ndarray, sr: int, utterances: list[Utterance]) -> list[dict[str, Any]]:
+    def _analyze_clarity(
+        self, y: np.ndarray, sr: int, utterances: list[Utterance]
+    ) -> list[dict[str, Any]]:
         """用频谱质心/带宽粗略估计清晰度."""
         findings = []
         spec_bw = librosa.feature.spectral_bandwidth(y=y, sr=sr)[0]

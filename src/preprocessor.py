@@ -53,9 +53,7 @@ class Preprocessor:
                     seg.vad_confidence = conf
                 segments.extend(sub_segments)
             elif seg_end - seg_start >= self.min_seg:
-                segments.append(
-                    Segment(start=seg_start, end=seg_end, vad_confidence=conf)
-                )
+                segments.append(Segment(start=seg_start, end=seg_end, vad_confidence=conf))
         return segments
 
     def _denoise(self, y: np.ndarray, sr: int) -> np.ndarray:
@@ -106,9 +104,7 @@ class Preprocessor:
 
         return nr.reduce_noise(y=y, sr=sr, prop_decrease=1.0, stationary=False)
 
-    def _vad(
-        self, y: np.ndarray, sr: int
-    ) -> tuple[list[tuple[int, int]], list[float]]:
+    def _vad(self, y: np.ndarray, sr: int) -> tuple[list[tuple[int, int]], list[float]]:
         """根据配置选择 VAD 后端，返回语音区间样本索引及置信度."""
         if self.vad_backend == "silero":
             try:
@@ -119,9 +115,7 @@ class Preprocessor:
                 warnings.warn(f"silero-vad 失败，回退到能量 VAD: {exc}")
         return self._vad_energy(y, sr)
 
-    def _vad_energy(
-        self, y: np.ndarray, sr: int
-    ) -> tuple[list[tuple[int, int]], list[float]]:
+    def _vad_energy(self, y: np.ndarray, sr: int) -> tuple[list[tuple[int, int]], list[float]]:
         """基于能量的 VAD，返回语音区间样本索引及统一置信度."""
         frame_length = int(sr * 0.02)
         hop_length = int(sr * 0.01)
@@ -157,11 +151,9 @@ class Preprocessor:
         confidence = 1.0 if intervals else 0.0
         return intervals, [confidence] * len(intervals)
 
-    def _vad_silero(
-        self, y: np.ndarray, sr: int
-    ) -> tuple[list[tuple[int, int]], list[float]]:
+    def _vad_silero(self, y: np.ndarray, sr: int) -> tuple[list[tuple[int, int]], list[float]]:
         """基于 silero-vad 的语音活动检测."""
-        from silero_vad import load_silero_vad, get_speech_timestamps
+        from silero_vad import get_speech_timestamps, load_silero_vad
 
         model = load_silero_vad()
         timestamps = get_speech_timestamps(
@@ -184,9 +176,7 @@ class Preprocessor:
             confidences.append(float(ts.get("confidence", 1.0)))
         return intervals, confidences
 
-    def _split_by_onsets(
-        self, y: np.ndarray, sr: int, offset_sec: float
-    ) -> list[Segment]:
+    def _split_by_onsets(self, y: np.ndarray, sr: int, offset_sec: float) -> list[Segment]:
         """在长语音区间内按自然停顿切分."""
         hop_length = int(sr * 0.01)
         onset_env = librosa.onset.onset_strength(y=y, sr=sr, hop_length=hop_length)

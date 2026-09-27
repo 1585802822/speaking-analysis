@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>[Alpine.js] 选择并分析</title>
+  <link rel="stylesheet" href="/static/styles.css" />
+  <script type="module" src="./alpine-app.js"></script>
+</head>
+<body data-framework="alpine">
+  <div class="container">
+    <h1>选择音频并分析（Alpine.js 版）</h1>
+    <div class="prototype-links">
+      <a href="./index.html">返回历史记录</a>
+    </div>
+
+    <div class="card" x-data="selectApp()">
+      <label>目录路径：
+        <input type="text" x-model="scanPath" style="width: 400px;" />
+      </label>
+      <button class="btn" @click="scan()" :disabled="scanning"
+        x-text="scanning ? '扫描中...' : '扫描'">扫描</button>
+
+      <div class="file-list" x-show="files.length">
+        <template x-for="f in files" :key="f.path">
+          <label class="file-item">
+            <input type="checkbox" :value="f.path" x-model="selected" />
+            <span x-text="f.name"></span>
+          </label>
+        </template>
+      </div>
+      <p x-show="scanned && !files.length">未找到音频文件</p>
+
+      <button class="btn" @click="analyze()" :disabled="!selected.length || analyzing">分析选中文件</button>
+
+      <div class="progress" x-show="progress.show">
+        <div x-text="progress.message"></div>
+        <div class="progress-bar" :style="'width: ' + progress.percent + '%'"></div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

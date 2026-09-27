@@ -41,9 +41,7 @@ class EmotionAnalyzer:
             self.feature_extractor = AutoFeatureExtractor.from_pretrained(model_name)
             self.model = AutoModel.from_pretrained(model_name)
         except Exception as exc:
-            warnings.warn(
-                f"无法加载情感模型 {model_name}, 将使用本地韵律特征回退: {exc}"
-            )
+            warnings.warn(f"无法加载情感模型 {model_name}, 将使用本地韵律特征回退: {exc}")
             self.model = None
             self.feature_extractor = None
 
@@ -66,8 +64,7 @@ class EmotionAnalyzer:
         else:
             labels = [f.get("label", "unknown") for f in findings]
             summary = (
-                f"检测到 {len(findings)} 个情感/语气区间, "
-                f"主要标签: {', '.join(set(labels))}。"
+                f"检测到 {len(findings)} 个情感/语气区间, 主要标签: {', '.join(set(labels))}。"
             )
         return AnalysisResult(dimension="emotion", findings=findings, summary=summary)
 
@@ -120,9 +117,7 @@ class EmotionAnalyzer:
 
         hop_length = int(sr * 0.01)
         frame_length = int(sr * 0.02)
-        rms = librosa.feature.rms(
-            y=y, frame_length=frame_length, hop_length=hop_length
-        )[0]
+        rms = librosa.feature.rms(y=y, frame_length=frame_length, hop_length=hop_length)[0]
         times = librosa.frames_to_time(np.arange(len(rms)), sr=sr, hop_length=hop_length)
 
         # 使用 pyin 提取基频, 失败则使用 yin
@@ -132,9 +127,7 @@ class EmotionAnalyzer:
             )
             f0_times = librosa.frames_to_time(np.arange(len(f0)), sr=sr)
         except Exception:
-            f0 = librosa.yin(
-                y, fmin=librosa.note_to_hz("C2"), fmax=librosa.note_to_hz("C7"), sr=sr
-            )
+            f0 = librosa.yin(y, fmin=librosa.note_to_hz("C2"), fmax=librosa.note_to_hz("C7"), sr=sr)
             f0_times = librosa.frames_to_time(np.arange(len(f0)), sr=sr)
 
         findings = []

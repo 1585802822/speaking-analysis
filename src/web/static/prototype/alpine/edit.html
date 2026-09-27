@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>[Alpine.js] 句子编辑</title>
+  <link rel="stylesheet" href="/static/styles.css" />
+  <script type="module" src="./alpine-app.js"></script>
+</head>
+<body data-framework="alpine">
+  <div class="container">
+    <h1>句子编辑与确认（Alpine.js 版）</h1>
+    <div class="prototype-links">
+      <a href="./index.html">返回历史记录</a>
+    </div>
+
+    <div class="card" x-data="editApp()">
+      <p x-show="recording">
+        <strong x-text="recordingId"></strong> · 状态：
+        <span x-text="statusText(recording.status)"></span> · 时长：
+        <span x-text="formatTime(recording.duration_sec)"></span>
+        <span class="failed-reason" x-show="recording.failed_reason" x-text="recording.failed_reason"></span>
+      </p>
+      <div class="btn-row">
+        <button class="btn btn-primary" x-show="canContinue()" @click="runContinue()" :disabled="evaluating" title="从上次中断处继续未完成的阶段">继续分析</button>
+        <button class="btn btn-success" @click="runEvaluate(false)" :disabled="evaluating || !canEval()">运行 ISE 评测</button>
+        <button class="btn btn-warning" @click="runEvaluate(true)" :disabled="evaluating || !canReevaluate()">重新评测</button>
+      </div>
+      <div class="progress" x-show="evalProgress.show">
+        <div x-text="evalProgress.message"></div>
+        <div class="progress-bar" :style="'width: ' + evalProgress.percent + '%'"></div>
+      </div>
+
+      <div class="card" x-show="segments.length">
+        <p class="muted">快捷键：↑/↓ 切换句子；x 切换 user/other；s 保存；Space 播放。</p>
+        <div id="segments-list"
+          @speaking:focus-prev="focusOffset(-1)"
+          @speaking:focus-next="focusOffset(1)"
+          @speaking:toggle-speaker.window="toggleSpeakerForActive()"
+          @speaking:save.window="saveActiveText()"
+          @speaking:play-toggle.window="toggleActiveAudio()"
+        >
+          <template x-for="seg in segments" :key="seg.segment_index">
+            <div
+              class="segment-row"
+              :class="seg.speaker_label || 'other'"
+              :data-segment-index="seg.segment_index"
+            >
+              <div class="segment-index" x-text="seg.segment_index"></div>
+              <div class="segment-time"
+                x-text="formatTime(seg.start_sec) + ' - ' + formatTime(seg.end_sec)"></div>
+              <div class="segment-speaker">
+                <select x-model="seg.speaker_label" @change="saveSpeaker(seg)"
+                  data-field="speaker"
+                >
+                  <option value="user">user</option>
+                  <option value="other">other</option>
+                </select>
+              </div>
+              <div class="segment-text">
+                <input type="text" x-model="seg.text" @blur="saveText(seg)" data-field="text" />
+              </div>
+              <div class="segment-audio">
+                <audio controls :src="audioUrl(seg.segment_index)" preload="none" style="width:160px;height:30px;"></audio>
+              </div>
+              <div class="segment-eval" x-show="evalFor(seg.segment_index).length">
+                <template x-for="ev in evalFor(seg.segment_index)" :key="ev.id">
+                  <div class="eval-panel">
+                    <div x-show="scoreFor(ev)">
+                      <span class="eval-score">总分 <span x-text="scoreFor(ev).overall_score?.toFixed(1) || '-'"></span></span>
+                      <span class="eval-score">准确度 <span x-text="scoreFor(ev).accuracy_score?.toFixed(1) || '-'"></span></span>
+                      <span class="eval-score">流利度 <span x-text="scoreFor(ev).fluency_score?.toFixed(1) || '-'"></span></span>
+                      <span class="eval-score">完整度 <span x-text="scoreFor(ev).integrity_score?.toFixed(1) || '-'"></span></span>
+                    </div>
+                    <template x-for="ph in phonesFor(ev)" :key="ph.phone + ph.start">
+                      <div class="phone-error"
+                        x-text="(ph.word_text || '') + '「' + ph.phone + '」' + ph.error_type"
+                      ></div>
+                    </template>
+                  </div>
+                </template>
+              </div>
+            </div>
+          </template>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

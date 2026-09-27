@@ -168,5 +168,22 @@ def _crop_segments(
     return paths
 
 
+@cli.command()
+@click.option("--host", default="127.0.0.1", help="监听地址")
+@click.option("--port", default=8000, help="监听端口", type=int)
+@click.option("--reload", is_flag=True, help="开发模式自动重载")
+@click.pass_context
+def web(ctx: click.Context, host: str, port: int, reload: bool) -> None:
+    """启动 Web UI 服务."""
+    import uvicorn
+
+    from .web.main import create_app
+
+    config = ctx.obj["config"]
+    app = create_app(config)
+    click.echo(f"启动 Web UI: http://{host}:{port}/")
+    uvicorn.run(app, host=host, port=port, reload=reload)
+
+
 if __name__ == "__main__":
     cli()

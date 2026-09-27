@@ -3,6 +3,8 @@
 input_dir: "./data/input"
 output_dir: "./data/output"
 voiceprint_dir: "./data/voiceprint"
+segments_dir: "./data/segments"
+db_path: "./data/db/speaking_analysis.db"
 audio_formats: [".mp3", ".wav", ".m4a", ".flac"]
 
 preprocessing:
@@ -23,6 +25,15 @@ preprocessing:
     # 阈值按 ECAPA-TDNN 实测分布校准(同人典型 0.48-0.7, 静音/异人≈0)
     similarity_threshold: 0.40
     low_confidence_threshold: 0.25
+
+sentence_segmentation:
+  target_sample_rate: 16000
+  min_sentence_sec: 0.5       # 单句最短时长
+  max_sentence_sec: 15.0      # 单句最长时长
+  pause_threshold_sec: 0.7    # 超过该时长的停顿视为句边界
+  min_pause_sec: 0.2          # 最短有效停顿
+  target_sentence_sec: 2.0    # 目标句长：短于它的相邻句且间隔 < pause_threshold_sec 时合并
+  padding_sec: 0.1            # 导出时前后保留的静音
 
 speaker:
   enrollment_duration_sec: 45

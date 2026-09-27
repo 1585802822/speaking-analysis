@@ -8,7 +8,6 @@ import pytest
 
 from src.enrollment import EnrollmentManager
 
-
 EMBEDDING_DIM = 192
 
 

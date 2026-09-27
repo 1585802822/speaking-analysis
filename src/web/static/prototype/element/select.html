@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>[Element Plus] 选择并分析</title>
+  <link rel="stylesheet" href="/static/styles.css" />
+  <link rel="stylesheet" href="/static/vendor/element-plus.css" />
+  <script src="/static/vendor/vue.global.prod.js"></script>
+  <script src="/static/vendor/element-plus.full.min.js"></script>
+  <script type="module" src="./element-app.js"></script>
+</head>
+<body data-framework="element">
+  <div id="app" class="container">
+    <h1>选择音频并分析（Element Plus 版）</h1>
+    <div class="prototype-links">
+      <a href="./index.html">返回历史记录</a>
+    </div>
+
+    <el-card>
+      <el-input v-model="scanPath" placeholder="请输入目录路径" style="width: 400px;"></el-input>
+      <el-button type="primary" @click="scan" :loading="scanning">{{ scanning ? '扫描中' : '扫描' }}</el-button>
+
+      <div class="file-list" v-if="files.length">
+        <el-checkbox-group v-model="selected">
+          <el-checkbox v-for="f in files" :key="f.path" :label="f.path">{{ f.name }}</el-checkbox>
+        </el-checkbox-group>
+      </div>
+      <p v-else-if="scanned">未找到音频文件</p>
+
+      <el-button type="success" @click="analyze" :disabled="!selected.length" :loading="analyzing"
+      >分析选中文件</el-button>
+
+      <div class="progress" v-if="progress.show">
+        <div>{{ progress.message }}</div>
+        <el-progress :percentage="progress.percent"></el-progress>
+      </div>
+    </el-card>
+  </div>
+</body>
+</html>

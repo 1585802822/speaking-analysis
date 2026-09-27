@@ -86,6 +86,23 @@ class Reporter:
                     {"start": s.start, "end": s.end, "confidence": s.confidence}
                     for s in result.low_confidence_segments
                 ],
+                "segment_transcriptions": [
+                    {
+                        "segment_index": t.segment_index,
+                        "speaker_label": t.speaker_label,
+                        "asr_source": t.asr_source,
+                        "audio_path": t.audio_path,
+                        "start": t.start,
+                        "end": t.end,
+                        "text": t.text,
+                        "words": [
+                            {"text": w.text, "start": w.start, "end": w.end} for w in t.words
+                        ],
+                        "status": t.status,
+                        "error_message": t.error_message,
+                    }
+                    for t in result.segment_transcriptions
+                ],
             },
             ensure_ascii=False,
             indent=2,

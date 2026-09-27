@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>[Element Plus] 句子编辑</title>
+  <link rel="stylesheet" href="/static/styles.css" />
+  <link rel="stylesheet" href="/static/vendor/element-plus.css" />
+  <script src="/static/vendor/vue.global.prod.js"></script>
+  <script src="/static/vendor/element-plus.full.min.js"></script>
+  <script type="module" src="./element-app.js"></script>
+</head>
+<body data-framework="element">
+  <div id="app" class="container">
+    <h1>句子编辑与确认（Element Plus 版）</h1>
+    <div class="prototype-links">
+      <a href="./index.html">返回历史记录</a>
+    </div>
+
+    <el-card v-if="recording">
+      <p>
+        <strong>{{ recordingId }}</strong> · 状态：
+        <el-tag :type="statusType(recording.status)">{{ statusText(recording.status) }}</el-tag>
+        · 时长：{{ formatTime(recording.duration_sec) }}
+        <span v-if="recording.failed_reason" class="failed-reason">{{ recording.failed_reason }}</span>
+      </p>
+      <el-button v-if="canContinue()" type="primary" @click="runContinue" :loading="evaluating"
+        title="从上次中断处继续未完成的阶段"
+      >继续分析</el-button>
+      <el-button type="success" @click="runEvaluate(false)" :loading="evaluating" :disabled="!canEval()"
+      >运行 ISE 评测</el-button>
+      <el-button type="warning" @click="runEvaluate(true)" :loading="evaluating" :disabled="!canReevaluate()"
+      >重新评测</el-button>
+      <div class="progress" v-if="evalProgress.show">
+        <div>{{ evalProgress.message }}</div>
+        <el-progress :percentage="evalProgress.percent"></el-progress>
+      </div>
+    </el-card>
+
+    <el-card v-if="segments.length">
+      <p class="muted">快捷键：↑/↓ 切换句子；x 切换 user/other；s 保存；Space 播放。</p>
+      <div id="segments-list"
+        @speaking:focus-prev="focusOffset(-1)"
+        @speaking:focus-next="focusOffset(1)"
+        @speaking:toggle-speaker="toggleSpeakerForActive()"
+        @speaking:save="saveActiveText()"
+        @speaking:play-toggle="toggleActiveAudio()"
+      >
+        <div
+          v-for="seg in segments"
+          :key="seg.segment_index"
+          class="segment-row"
+          :class="seg.speaker_label || 'other'"
+          :data-segment-index="seg.segment_index"
+        >
+          <div class="segment-index">{{ seg.segment_index }}</div>
+          <div class="segment-time">{{ formatTime(seg.start_sec) }} - {{ formatTime(seg.end_sec) }}</div>
+          <div class="segment-speaker">
+            <el-select v-model="seg.speaker_label" @change="saveSpeaker(seg)" data-field="speaker"
+              style="width: 120px;"
+            >
+              <el-option label="user" value="user"></el-option>
+              <el-option label="other" value="other"></el-option>
+            </el-select>
+          </div>
+          <div class="segment-text">
+            <el-input v-model="seg.text" @blur="saveText(seg)" data-field="text"></el-input>
+          </div>
+          <div class="segment-audio">
+            <audio controls :src="audioUrl(seg.segment_index)" preload="none" style="width:160px;height:30px;"></audio>
+          </div>
+          <div class="segment-eval" v-if="evalFor(seg.segment_index).length">
+            <div class="eval-panel" v-for="ev in evalFor(seg.segment_index)" :key="ev.id">
+              <div v-if="scoreFor(ev)">
+                <span class="eval-score">总分 {{ scoreFor(ev).overall_score?.toFixed(1) || '-' }}</span>
+                <span class="eval-score">准确度 {{ scoreFor(ev).accuracy_score?.toFixed(1) || '-' }}</span>
+                <span class="eval-score">流利度 {{ scoreFor(ev).fluency_score?.toFixed(1) || '-' }}</span>
+                <span class="eval-score">完整度 {{ scoreFor(ev).integrity_score?.toFixed(1) || '-' }}</span>
+              </div>
+              <div class="phone-error" v-for="ph in phonesFor(ev)" :key="ph.phone + ph.start"
+              >{{ ph.word_text }}「{{ ph.phone }}」{{ ph.error_type }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </el-card>
+  </div>
+</body>
+</html>

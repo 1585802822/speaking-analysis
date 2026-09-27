@@ -9,7 +9,8 @@
    避免用 A 录音的时间戳去切 B 录音。
 
 用法:
-    python scripts/preprocess_audio.py "data/input/xxx.wav" [--out data/output/preprocessed/run1] [--user-only]
+    python scripts/preprocess_audio.py "data/input/xxx.wav" \
+        [--out data/output/preprocessed/run1] [--user-only]
 """
 
 from __future__ import annotations
@@ -91,9 +92,7 @@ def main() -> None:
             print("错误：未找到注册声纹，无法按 --user-only 过滤")
             return
         module = DiarizationModule(config)
-        segments = module.filter_segments_by_voiceprint(
-            segments, audio_path, voiceprint=voiceprint
-        )
+        segments = module.filter_segments_by_voiceprint(segments, audio_path, voiceprint=voiceprint)
 
     # 顺序保障：无论上游顺序如何，导出前统一按时间排序
     segments = sorted(segments, key=lambda s: (s.start, s.end))

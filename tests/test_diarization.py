@@ -57,9 +57,7 @@ def test_identify_user_stub_returns_empty(tmp_path: Path) -> None:
         Segment(start=0.0, end=1.0),
         Segment(start=2.0, end=3.0),
     ]
-    user_segments = module.identify_user(
-        segments, voiceprint, str(tmp_path / "nonexistent.wav")
-    )
+    user_segments = module.identify_user(segments, voiceprint, str(tmp_path / "nonexistent.wav"))
     assert user_segments == []
     for seg in segments:
         assert seg.confidence == 0.0

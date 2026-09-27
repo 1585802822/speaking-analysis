@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>[Native] 选择并分析</title>
+  <link rel="stylesheet" href="/static/styles.css" />
+  <script type="module" src="./native-app.js"></script>
+</head>
+<body data-framework="native">
+  <div class="container">
+    <h1>选择音频并分析（原生版）</h1>
+    <div class="prototype-links">
+      <a href="./index.html">返回历史记录</a>
+    </div>
+
+    <div class="card">
+      <label>目录路径：<input type="text" id="scan-path" value="D:\\project\\speaking-analysis\\data\\input" style="width: 400px;" /></label>
+      <button class="btn" id="btn-scan">扫描</button>
+      <div id="file-list" class="file-list"></div>
+      <button class="btn" id="btn-analyze" disabled>分析选中文件</button>
+      <div id="progress" class="progress" style="display: none;"></div>
+    </div>
+  </div>
+</body>
+</html>

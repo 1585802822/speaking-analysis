@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>[Alpine.js] 录音分析 Web UI</title>
+  <link rel="stylesheet" href="/static/styles.css" />
+  <script type="module" src="./alpine-app.js"></script>
+</head>
+<body data-framework="alpine">
+  <div class="container">
+    <h1>Alpine.js (CDN) 版</h1>
+    <div class="prototype-links">
+      <a href="/">返回首页</a>
+      <a href="./select.html">选择文件分析</a>
+    </div>
+
+    <div class="card" x-data="historyApp()" x-init="load()">
+      <h2>分析历史记录</h2>
+      <table x-show="recordings.length">
+        <thead>
+          <tr>
+            <th>ID</th><th>文件</th><th>状态</th>
+            <th>时长</th><th>处理时间</th><th>操作</th>
+          </tr>
+        </thead>
+        <tbody>
+          <template x-for="rec in recordings" :key="rec.id">
+            <tr>
+              <td x-text="rec.id"></td>
+              <td :title="rec.original_path" x-text="basename(rec.original_path)"></td>
+              <td x-text="statusText(rec.status)"></td>
+              <td x-text="formatTime(rec.duration_sec)"></td>
+              <td x-text="formatDateTime(rec.processed_at)"></td>
+              <td>
+                <a class="btn" :href="'./edit.html?recording_id=' + rec.id">编辑</a>
+              </td>
+            </tr>
+          </template>
+        </tbody>
+      </table>
+      <p x-show="!recordings.length">暂无分析记录</p>
+    </div>
+  </div>
+</body>
+</html>

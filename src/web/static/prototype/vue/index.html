@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>[Vue 3] 录音分析 Web UI</title>
+  <link rel="stylesheet" href="/static/styles.css" />
+  <script type="module" src="./vue-app.js"></script>
+</head>
+<body data-framework="vue">
+  <div id="app" class="container">
+    <h1>Vue 3 (CDN) 版</h1>
+    <div class="prototype-links">
+      <a href="/">返回首页</a>
+      <a href="./select.html">选择文件分析</a>
+    </div>
+
+    <div class="card">
+      <h2>分析历史记录</h2>
+      <table v-if="recordings.length">
+        <thead>
+          <tr>
+            <th>ID</th><th>文件</th><th>状态</th>
+            <th>时长</th><th>处理时间</th><th>操作</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="rec in recordings" :key="rec.id">
+            <td>{{ rec.id }}</td>
+            <td :title="rec.original_path">{{ basename(rec.original_path) }}</td>
+            <td>{{ statusText(rec.status) }}</td>
+            <td>{{ formatTime(rec.duration_sec) }}</td>
+            <td>{{ formatDateTime(rec.processed_at) }}</td>
+            <td>
+              <a class="btn" :href="'./edit.html?recording_id=' + rec.id">编辑</a>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <p v-else>暂无分析记录</p>
+    </div>
+  </div>
+</body>
+</html>

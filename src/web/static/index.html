@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>日常录音分析工具 - Web UI Demo</title>
+  <link rel="stylesheet" href="/static/styles.css" />
+  <script type="module" src="/static/index.js"></script>
+</head>
+<body>
+  <div class="container">
+    <h1>日常录音分析工具 - 浏览器版 Demo</h1>
+    <p>请选择一套前端原型体验，四套页面共用同一套后端 API 和数据库。</p>
+
+    <div class="prototype-links">
+      <a href="/static/prototype/native/index.html">原生 HTML + JS</a>
+      <a href="/static/prototype/vue/index.html">Vue 3 (CDN)</a>
+      <a href="/static/prototype/alpine/index.html">Alpine.js (CDN)</a>
+      <a href="/static/prototype/element/index.html">Vue 3 + Element Plus (CDN)</a>
+    </div>
+
+    <div class="card">
+      <h2>分析历史记录</h2>
+      <div id="history-list">加载中...</div>
+    </div>
+  </div>
+</body>
+</html>

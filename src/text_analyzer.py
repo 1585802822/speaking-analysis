@@ -2,10 +2,9 @@
 
 from __future__ import annotations
 
-import re
 from typing import Any
 
-from .types import AnalysisResult, Utterance, Word
+from .types import AnalysisResult, Utterance
 
 
 class TextAnalyzer:

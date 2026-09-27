@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>[Native] 句子编辑</title>
+  <link rel="stylesheet" href="/static/styles.css" />
+  <script type="module" src="./native-app.js"></script>
+</head>
+<body data-framework="native">
+  <div class="container">
+    <h1>句子编辑与确认（原生版）</h1>
+    <div class="prototype-links">
+      <a href="./index.html">返回历史记录</a>
+    </div>
+
+    <div class="card">
+      <div id="recording-info">加载中...</div>
+      <div class="btn-row">
+        <button class="btn btn-primary" id="btn-continue" style="display: none;" title="从上次中断处继续未完成的阶段">继续分析</button>
+        <button class="btn btn-success" id="btn-evaluate" disabled>运行 ISE 评测</button>
+        <button class="btn btn-warning" id="btn-reevaluate" disabled>重新评测</button>
+      </div>
+      <div id="eval-progress" class="progress" style="display: none;"></div>
+    </div>
+
+    <div class="card" id="segments-card" style="display: none;">
+      <p class="muted">快捷键：↑/↓ 切换句子；x 切换 user/other；s 保存；Space 播放。</p>
+      <div id="segments-list"></div>
+    </div>
+  </div>
+</body>
+</html>

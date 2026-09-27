@@ -4,12 +4,13 @@ import json
 from pathlib import Path
 from unittest.mock import patch
 
+import numpy as np
 from click.testing import CliRunner
 
 from src.cli import cli
 from src.enrollment import EnrollmentManager
 from src.reporter import Reporter
-from src.types import AnalysisResult, ProcessingResult, Segment
+from src.types import ProcessingResult, Segment
 
 
 def _config(tmp_path: Path) -> dict:
@@ -55,9 +56,7 @@ def test_update_voiceprint_moves_center(tmp_path: Path):
     # 注册初始声纹
     fake_path = tmp_path / "enroll.wav"
     fake_path.write_text("fake audio")
-    with patch.object(
-        manager, "_extract_embedding", side_effect=lambda p: _embedding_from_path(p)
-    ):
+    with patch.object(manager, "_extract_embedding", side_effect=lambda p: _embedding_from_path(p)):
         manager.enroll(str(fake_path))
 
         center_before = manager.load_voiceprint()["embedding"]
@@ -114,9 +113,7 @@ def test_cli_correct_command_parses_segments(tmp_path: Path):
     # 先注册, 避免未找到声纹
     runner = CliRunner()
     with runner.isolated_filesystem(temp_dir=str(tmp_path)):
-        result = runner.invoke(
-            cli, ["--config", str(config_path), "register", str(audio_path)]
-        )
+        result = runner.invoke(cli, ["--config", str(config_path), "register", str(audio_path)])
         assert result.exit_code == 0, result.output
 
         def _fake_crop(audio_path, start, end, output_path, target_sr=16000):

@@ -5,7 +5,6 @@ from __future__ import annotations
 from pathlib import Path
 
 import numpy as np
-import pytest
 
 from src.preprocessor import Preprocessor
 from src.types import Segment
@@ -89,13 +88,7 @@ def test_preprocessor_fallback_on_unknown_backend(tmp_path: Path) -> None:
 
 def test_preprocessor_silero_backend_used_if_available(tmp_path: Path) -> None:
     """silero 后端在依赖可用时被调用，否则回退."""
-    module = _module(
-        {
-            "preprocessing": {
-                "vad": {"backend": "silero", "threshold": 0.5}
-            }
-        }
-    )
+    module = _module({"preprocessing": {"vad": {"backend": "silero", "threshold": 0.5}}})
     sr = 16000
     y = np.sin(2 * np.pi * 400 * np.arange(int(sr * 1.0)) / sr) * 0.5
     path = tmp_path / "silero.wav"
@@ -109,13 +102,7 @@ def test_preprocessor_silero_backend_used_if_available(tmp_path: Path) -> None:
 
 def test_preprocessor_noisereduce_backend_used_if_available(tmp_path: Path) -> None:
     """noisereduce 后端在依赖可用时被调用，否则回退."""
-    module = _module(
-        {
-            "preprocessing": {
-                "denoise": {"backend": "noisereduce"}
-            }
-        }
-    )
+    module = _module({"preprocessing": {"denoise": {"backend": "noisereduce"}}})
     sr = 16000
     y = np.sin(2 * np.pi * 400 * np.arange(int(sr * 1.0)) / sr) * 0.5
     path = tmp_path / "nr.wav"

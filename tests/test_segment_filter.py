@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import numpy as np
-import pytest
 
 from src.segment_filter import filter_target_speaker, mark_low_confidence
 from src.types import Segment
@@ -22,9 +21,7 @@ def test_filter_target_speaker_keeps_high_similarity() -> None:
     original_extract = sf._extract_segment_embedding
     sf._extract_segment_embedding = fake_extract  # type: ignore[assignment]
     try:
-        results = filter_target_speaker(
-            [seg], audio, 16000, enroll, {}, similarity_threshold=0.7
-        )
+        results = filter_target_speaker([seg], audio, 16000, enroll, {}, similarity_threshold=0.7)
     finally:
         sf._extract_segment_embedding = original_extract
 
@@ -47,9 +44,7 @@ def test_filter_target_speaker_filters_low_similarity() -> None:
     original_extract = sf._extract_segment_embedding
     sf._extract_segment_embedding = fake_extract  # type: ignore[assignment]
     try:
-        results = filter_target_speaker(
-            [seg], audio, 16000, enroll, {}, similarity_threshold=0.7
-        )
+        results = filter_target_speaker([seg], audio, 16000, enroll, {}, similarity_threshold=0.7)
     finally:
         sf._extract_segment_embedding = original_extract
 

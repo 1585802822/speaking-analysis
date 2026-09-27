@@ -19,6 +19,8 @@ class Segment:
     speaker_label: str | None = None
     speaker_confidence: float | None = None
     needs_review: bool = False
+    segment_index: int | None = None
+    recording_id: str | None = None
 
 
 @dataclass
@@ -42,6 +44,28 @@ class Utterance:
 
 
 @dataclass
+class SegmentTranscription:
+    """单个句子片段的 ASR 转写结果.
+
+    与 Utterance 相比，额外保留片段元数据（recording_id、segment_index、
+    speaker_label、asr_source），用于 UI 展示、人工校正和数据库存储。
+    """
+
+    recording_id: str
+    segment_index: int
+    speaker_label: str
+    asr_source: str  # "api" | "local"
+    audio_path: str
+    start: float
+    end: float
+    text: str
+    words: list[Word] = field(default_factory=list)
+    status: str = "success"  # "success" | "failed"
+    error_message: str | None = None
+    confidence: float | None = None
+
+
+@dataclass
 class AnalysisResult:
     """单个分析维度的发现."""
 
@@ -60,3 +84,5 @@ class ProcessingResult:
     utterances: list[Utterance] = field(default_factory=list)
     analyses: list[AnalysisResult] = field(default_factory=list)
     low_confidence_segments: list[Segment] = field(default_factory=list)
+    segment_transcriptions: list[SegmentTranscription] = field(default_factory=list)
+    recording_id: str | None = None

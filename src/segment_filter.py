@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from concurrent.futures import ThreadPoolExecutor
-from pathlib import Path
 from typing import Any
 
 import numpy as np
@@ -39,9 +38,7 @@ def _extract_segment_embedding(
     return extract_embedding_from_array(audio[start_sample:end_sample], sr, config)
 
 
-def mark_low_confidence(
-    segments: list[Segment], low_confidence_threshold: float
-) -> list[Segment]:
+def mark_low_confidence(segments: list[Segment], low_confidence_threshold: float) -> list[Segment]:
     """标记置信度低于阈值的片段需要人工复核."""
     for seg in segments:
         conf = seg.speaker_confidence if seg.speaker_confidence is not None else seg.confidence

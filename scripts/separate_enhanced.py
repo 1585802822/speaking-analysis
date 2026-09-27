@@ -38,9 +38,7 @@ def reenroll_voiceprint(config: dict[str, Any]) -> dict[str, Any]:
     避免整段嵌入被静音污染.
     """
     voiceprint_dir = Path(config.get("voiceprint_dir", "data/voiceprint"))
-    files = sorted(
-        p for p in voiceprint_dir.iterdir() if p.suffix.lower() in AUDIO_EXTS
-    )
+    files = sorted(p for p in voiceprint_dir.iterdir() if p.suffix.lower() in AUDIO_EXTS)
     if not files:
         raise RuntimeError(f"{voiceprint_dir} 中没有音频文件, 无法注册声纹")
 
@@ -125,7 +123,9 @@ def main() -> None:
         try:
             meta = json.loads(source_meta.read_text(encoding="utf-8"))
             if meta.get("source_file"):
-                print(f"预处理来源: {meta['source_file']} ({meta.get('source_duration_sec', '?')}s)")
+                print(
+                    f"预处理来源: {meta['source_file']} ({meta.get('source_duration_sec', '?')}s)"
+                )
         except (OSError, ValueError):
             pass
     print("=" * 50)

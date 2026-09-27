@@ -163,7 +163,9 @@ def test_merge_output_never_overlaps(tmp_path: Path) -> None:
     windows = [
         Segment(start=0.0, end=3.0, speaker_label="user", speaker_confidence=0.9),
         Segment(start=1.5, end=4.5, speaker_label="user", speaker_confidence=0.88),
-        Segment(start=3.0, end=6.0, speaker_label="unknown", speaker_confidence=0.1, needs_review=True),
+        Segment(
+            start=3.0, end=6.0, speaker_label="unknown", speaker_confidence=0.1, needs_review=True
+        ),
         Segment(start=4.5, end=7.5, speaker_label="other", speaker_confidence=0.3),
         Segment(start=6.0, end=9.0, speaker_label="other", speaker_confidence=0.4),
     ]
@@ -181,9 +183,15 @@ def test_merge_coalesces_consecutive_unknown_windows(tmp_path: Path) -> None:
     module = _module(tmp_path)
     windows = [
         Segment(start=0.0, end=3.0, speaker_label="other", speaker_confidence=0.3),
-        Segment(start=1.5, end=4.5, speaker_label="unknown", speaker_confidence=0.1, needs_review=True),
-        Segment(start=3.0, end=6.0, speaker_label="unknown", speaker_confidence=0.2, needs_review=True),
-        Segment(start=4.5, end=7.5, speaker_label="unknown", speaker_confidence=0.15, needs_review=True),
+        Segment(
+            start=1.5, end=4.5, speaker_label="unknown", speaker_confidence=0.1, needs_review=True
+        ),
+        Segment(
+            start=3.0, end=6.0, speaker_label="unknown", speaker_confidence=0.2, needs_review=True
+        ),
+        Segment(
+            start=4.5, end=7.5, speaker_label="unknown", speaker_confidence=0.15, needs_review=True
+        ),
         Segment(start=6.0, end=9.0, speaker_label="user", speaker_confidence=0.9),
     ]
     merged = module._merge_same_speaker_windows(windows)

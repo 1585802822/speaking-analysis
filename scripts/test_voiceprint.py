@@ -98,7 +98,9 @@ def export_split_audio(
         label_dir.mkdir(parents=True, exist_ok=True)
         idx = counters.get(label, 0)
         counters[label] = idx + 1
-        sf.write(str(label_dir / f"{label}_{idx:03d}_{seg.start:07.2f}-{seg.end:07.2f}s.wav"), chunk, sr)
+        sf.write(
+            str(label_dir / f"{label}_{idx:03d}_{seg.start:07.2f}-{seg.end:07.2f}s.wav"), chunk, sr
+        )
         merged.setdefault(label, []).append(chunk)
 
     combined: dict[str, Path] = {}
@@ -217,7 +219,9 @@ def main() -> None:
     print("-" * 50)
     print(f"分离音频已导出到：{out_dir}")
     for label, path in sorted(combined.items()):
-        print(f"  {label}: {len(list((out_dir / label).glob('*.wav')))} 个片段, 合并文件 {path.name}")
+        print(
+            f"  {label}: {len(list((out_dir / label).glob('*.wav')))} 个片段, 合并文件 {path.name}"
+        )
     print("=" * 50)
 
 

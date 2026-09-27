@@ -20,6 +20,8 @@ def test_pipeline_runs(tmp_path):
         "input_dir": str(tmp_path / "input"),
         "output_dir": str(tmp_path / "output"),
         "voiceprint_dir": str(tmp_path / "voiceprint"),
+        "segments_dir": str(tmp_path / "segments"),
+        "db_path": str(tmp_path / "speaking_analysis.db"),
         "audio_formats": [".wav"],
         "segmentation": {
             "target_sample_rate": 16000,
