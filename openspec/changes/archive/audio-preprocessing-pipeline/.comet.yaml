@@ -1,8 +1,8 @@
 workflow: full
 language: zh-CN
 phase: archive
-design_doc: docs/superpowers/specs/audio-preprocessing-pipeline-design.md
-plan: docs/superpowers/plans/audio-preprocessing-pipeline-plan.md
+design_doc: openspec/changes/archive/audio-preprocessing-pipeline/specs/audio-preprocessing-pipeline/spec.md
+plan: openspec/changes/archive/audio-preprocessing-pipeline/tasks.md
 build_mode: executing-plans
 isolation: current
 verify_mode: full

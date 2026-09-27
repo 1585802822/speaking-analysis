@@ -1,0 +1,4 @@
+schema: openspec.project.v1
+name: speaking-analysis
+version: 0.2.0
+language: zh-CN

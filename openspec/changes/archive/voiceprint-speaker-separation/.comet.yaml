@@ -12,8 +12,8 @@ bound_branch: null
 verify_mode: full
 auto_transition: null
 base_ref: null
-design_doc: docs/superpowers/specs/voiceprint-speaker-separation-design.md
-plan: docs/superpowers/plans/voiceprint-speaker-separation-plan.md
+design_doc: openspec/changes/archive/voiceprint-speaker-separation/design.md
+plan: openspec/changes/archive/voiceprint-speaker-separation/specs/voiceprint-speaker-separation/spec.md
 verify_result: pass
 verify_failures: 0
 verification_report: null

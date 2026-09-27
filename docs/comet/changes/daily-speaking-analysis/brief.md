@@ -57,7 +57,7 @@
 
 # Open questions
 
-- [blocking] CONFIRM: 请确认上述需求理解是否准确，是否进入 Build 阶段开始实现？
+- [resolved] 该 Native 需求已归档，用户决定不继续推进。原 [blocking] CONFIRM 问题（是否进入 Build）因不推进而关闭，不表示此时对需求理解的最终确认。
 
 # Verification expectations
 

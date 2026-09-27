@@ -1,8 +1,8 @@
 workflow: full
 language: zh-CN
 phase: archive
-design_doc: docs/superpowers/specs/better-voiceprint-model-design.md
-plan: docs/superpowers/plans/better-voiceprint-model-plan.md
+design_doc: openspec/changes/better-voiceprint-model/specs/better-voiceprint-model/spec.md
+plan: openspec/changes/better-voiceprint-model/tasks.md
 build_mode: null
 isolation: branch
 bound_branch: comet/better-voiceprint-model

@@ -1,3 +1,7 @@
+---
+archived-with: 2026-09-26-mvp-asr-iflytek
+status: final
+---
 # 任务清单
 
 ## Open

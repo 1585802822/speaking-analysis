@@ -1,7 +1,7 @@
 schema: comet.classic.v1
 name: daily-speaking-analysis
 phase: archive
-plan: docs/superpowers/plans/plan.md
+plan: openspec/changes/archive/daily-speaking-analysis/tasks.md
 build_mode: subagent-driven-development
 subagent_dispatch: confirmed
 review_mode: standard

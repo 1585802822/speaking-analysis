@@ -4,7 +4,13 @@
       "type": "stdio",
       "command": "npx",
       "args": [
-        "chrome-devtools-mcp@latest"
+        "-y",
+        "chrome-devtools-mcp@latest",
+        "--executablePath",
+        "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe",
+        "--userDataDir",
+        "C:\\Users\\Administrator\\AppData\\Local\\edge-mcp-profile",
+        "--no-usage-statistics"
       ],
       "env": {}
     }
