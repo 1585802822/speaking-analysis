@@ -16,7 +16,14 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"D:/project/speaking-analysis/.claude/skills/comet/scripts/comet-hook-router.mjs\" --platform \"claude\" --project-root \"D:/project/speaking-analysis\""
+            "command": "node",
+            "args": [
+              "D:\\project\\speaking-analysis\\.claude\\skills\\comet\\scripts\\comet-hook-router.mjs",
+              "--platform",
+              "claude",
+              "--project-root",
+              "D:\\project\\speaking-analysis"
+            ]
           }
         ]
       }
