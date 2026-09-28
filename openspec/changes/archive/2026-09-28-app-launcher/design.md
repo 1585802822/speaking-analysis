@@ -2,6 +2,8 @@
 comet_change: app-launcher
 role: technical-design
 canonical_spec: openspec
+archived-with: 2026-09-28-app-launcher
+status: final
 ---
 
 # 设计文档：应用启动器（app-launcher）

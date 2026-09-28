@@ -1,3 +1,7 @@
+---
+archived-with: 2026-09-28-app-launcher
+status: final
+---
 # 应用启动器（app-launcher）实施计划
 
 ## 目标

@@ -11,7 +11,7 @@ isolation: current
 verify_mode: null
 auto_transition: true
 base_ref: 845a4d6f448a74ad0e42137b53144b9c2bcfdb52
-design_doc: openspec/changes/app-launcher/design.md
+design_doc: openspec/changes/archive/2026-09-28-app-launcher/design.md
 plan: docs/superpowers/plans/app-launcher-plan.md
 verify_result: pass
 verify_failures: 0
@@ -19,13 +19,13 @@ verification_report: docs/superpowers/reports/app-launcher-verification.md
 branch_status: pending
 created_at: 2026-09-28
 verified_at: 2026-09-28
-archive_confirmation: pending
-archived: false
+archive_confirmation: confirmed
+archived: true
 bound_branch: master
 direct_override: true
-handoff_context: openspec/changes/app-launcher/.comet/handoff/design-context.json
+handoff_context: openspec/changes/archive/2026-09-28-app-launcher/.comet/handoff/design-context.json
 handoff_hash: f8f22729220c4dcfe3e8418d77f32b69338ddf09df950c551f46bb0d59fe8b7d
 classic_profile: full
 classic_migration: 1
 run_id: 32954f04-f5ea-436a-8313-2f46ad233d16
-check_epoch: 4
+check_epoch: 11

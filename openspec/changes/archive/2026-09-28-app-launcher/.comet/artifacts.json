@@ -1,0 +1,7 @@
+{
+  "openspec_tasks": "openspec/changes/app-launcher/tasks.md",
+  "openspec_delta_spec": "openspec/changes/app-launcher/specs/app-launcher/spec.md",
+  "handoff_context": "openspec/changes/archive/2026-09-28-app-launcher/.comet/handoff/design-context.json",
+  "handoff_markdown": "openspec/changes/archive/2026-09-28-app-launcher/.comet/handoff/design-context.md",
+  "archive_directory": "openspec/changes/archive/2026-09-28-app-launcher"
+}
