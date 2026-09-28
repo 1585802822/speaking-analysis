@@ -14,6 +14,7 @@
 
 ## 已完成
 
+- [x] 一键启动器：`scripts/launcher.py`（解耦、纯标准库、子进程拉起 web+watch+浏览器）+ `scripts/start.bat` 双击入口；12 个单元测试 + 实际启动/Ctrl+C 回收/start.bat 冒烟全部通过
 - [x] 前端依赖本地化：Vue / Element Plus / Alpine 下载到 `src/web/static/vendor/`，移除 unpkg / jsdelivr CDN 引用
 - [x] UI 修复：「继续分析」按钮收敛 + 说明提示；状态文案「待校对」；文件名去扩展名；时长/处理时间精简（formatTime / formatDateTime）
 - [x] 说话人二分类 user / other（needs_review 不再产生，读取层归一化旧数据）

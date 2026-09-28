@@ -24,6 +24,20 @@ uv sync
 > 也可以改用 Model API Gateway（见下方「API 模式」），避免本地下载重型模型。
 > 新增的 `noisereduce` 与 `silero-vad` 为可选依赖；未安装时会自动回退到内置的谱减法与能量 VAD。
 
+## 快速启动 / Quick Start
+
+**中文**：双击 `scripts/start.bat`，或在终端运行：
+
+```bash
+uv run python scripts/launcher.py
+```
+
+启动器会一键拉起 Web 服务（含前端页面）与录音目录监控，并在服务就绪后自动打开浏览器访问 `http://127.0.0.1:8000/`。按 `Ctrl+C` 可同时停止全部组件。
+
+可选参数：`--port 8080` 换端口、`--no-watch` 不启动目录监控、`--no-browser` 不自动打开浏览器。
+
+**English**: Double-click `scripts/start.bat`, or run `uv run python scripts/launcher.py`. The launcher starts the web server (frontend included) and the folder watcher in one shot, then opens `http://127.0.0.1:8000/` in your browser once ready. Press `Ctrl+C` to stop everything. Options: `--port`, `--no-watch`, `--no-browser`.
+
 ## API 模式
 
 工具支持将 ASR 转写和声纹嵌入交给统一的 Model API Gateway，本地仅保留预处理、规则分析、报告生成等轻量模块。

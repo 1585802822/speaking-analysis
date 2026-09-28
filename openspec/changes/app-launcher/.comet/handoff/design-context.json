@@ -1,0 +1,15 @@
+{
+  "change": "app-launcher",
+  "phase": "design",
+  "mode": "compact",
+  "canonical_spec": "openspec",
+  "task_hash_policy": "task-content-v1",
+  "generated_by": "comet-handoff.sh",
+  "context_hash": "f8f22729220c4dcfe3e8418d77f32b69338ddf09df950c551f46bb0d59fe8b7d",
+  "files": [
+    { "path": "openspec/changes/app-launcher/proposal.md", "sha256": "f99f3fe2cde06ec91e75f3bfe9e9cc014ffd8d100b65106133a93ea22428d512" },
+    { "path": "openspec/changes/app-launcher/design.md", "sha256": "997f7258dbbf6762661ae7d7a010aa7980491d25adf3ff6107e4707a8b883e52" },
+    { "path": "openspec/changes/app-launcher/tasks.md", "sha256": "3b2dafa05b09e580479e92cc31f776c6be7e4287f16540a396831114e0512c29" },
+    { "path": "openspec/changes/app-launcher/specs/app-launcher/spec.md", "sha256": "4355cd020be7c2f7e7e9dba219207acbafe21c1954a6610ffd10f7622030d27c" }
+  ]
+}
