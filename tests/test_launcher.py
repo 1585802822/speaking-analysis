@@ -107,3 +107,18 @@ class TestMainGuards:
         with mock.patch.object(launcher, "is_port_in_use", return_value=True):
             assert launcher.main([]) == 2
         assert "已被占用" in capsys.readouterr().out
+
+
+class TestStartBat:
+    """start.bat 必须为纯 ASCII + CRLF，避免 cmd 按 GBK 解析 UTF-8 中文时字节错位."""
+
+    START_BAT = Path(__file__).resolve().parent.parent / "scripts" / "start.bat"
+
+    def test_start_bat_is_ascii(self) -> None:
+        data = self.START_BAT.read_bytes()
+        assert all(b < 128 for b in data), "start.bat 必须为纯 ASCII（无中文），否则 cmd 解析会错位"
+
+    def test_start_bat_uses_crlf(self) -> None:
+        data = self.START_BAT.read_bytes()
+        assert b"\r\n" in data
+        assert b"\n" not in data.replace(b"\r\n", b"")

@@ -1,0 +1,2 @@
+# Windows 批处理固定 CRLF，避免 cmd 解析错位
+*.bat text eol=crlf

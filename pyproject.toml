@@ -1,6 +1,6 @@
 [project]
 name = "speaking-analysis"
-version = "0.3.0"
+version = "0.3.1"
 description = "本地日常录音分析工具"
 readme = "README.md"
 authors = [

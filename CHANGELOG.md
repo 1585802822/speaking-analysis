@@ -11,6 +11,10 @@
 
 - 一键启动器：新增 `scripts/launcher.py`（纯标准库，与前后端解耦，仅通过子进程调用现有 CLI）与双击入口 `scripts/start.bat`，一键拉起 Web 服务（含前端）+ 目录监控 watch，服务就绪后自动打开浏览器；支持 `--host/--port/--no-web/--no-watch/--no-browser`，Ctrl+C 优雅回收全部子进程，端口占用预检并友好报错。
 
+### 修复
+
+- `scripts/start.bat` 双击报错 `scripts\scripts\launcher.py`：移除批处理内 UTF-8 中文注释（cmd 按 GBK 解析导致字节错位、`cd` 失效），改为英文 ASCII 注释 + CRLF 换行 + 绝对路径 `%~dp0launcher.py` 双保险；新增 `.gitattributes`（`*.bat eol=crlf`）与 `TestStartBat` 防回归测试。
+
 - 浏览器版 Web UI Demo：基于 FastAPI + SSE 提供后端 API，前端同时实现 4 套原型（原生 HTML+JS、Vue 3 CDN、Alpine.js CDN、Vue 3 + Element Plus CDN），支持目录扫描、音频分析、ASR 文本/说话人标签修正、ISE 评测结果展示与键盘快捷键。
 - ASR 切换为讯飞「录音文件转写大模型版」（Ifasr_llm）：新增 `iFlytekLlmASRClient` 与工厂 `build_llm_asr_client`，走 `上传音频获取 orderId → 轮询 getResult` 流程，HMAC-SHA1 签名；`api.iflytek.mode` 新增 `llm`。
 - 发音评测新增讯飞「Spark VAA 语音分析」可选实现 `iFlytekVoiceInsightClient`（`src/iflytek_evaluation_client.py`），走 `创建任务 → 轮询结果` 流程，HMAC-SHA256 鉴权；`evaluation.mode` 新增 `voice_insight` 选项（默认仍为 `ise`）。
