@@ -1,0 +1,15 @@
+{
+  "change": "task-failure-handling",
+  "phase": "design",
+  "mode": "compact",
+  "canonical_spec": "openspec",
+  "task_hash_policy": "task-content-v1",
+  "generated_by": "comet-handoff.sh",
+  "context_hash": "717e13a8a7f9713027c3928f89353e8e2d84be74566c25946e422a251ca32351",
+  "files": [
+    { "path": "openspec/changes/task-failure-handling/proposal.md", "sha256": "f829f0a97f4b43920694887ea5bf6f8968441750223c420961b0cc708c74f8bd" },
+    { "path": "openspec/changes/task-failure-handling/design.md", "sha256": "7f9c0ca9d0796e71d32f82f61604a45a48391ed1cfcb35a2715791ec8e41ca83" },
+    { "path": "openspec/changes/task-failure-handling/tasks.md", "sha256": "61595bf5c9dc7accd14672c1c3ac7c8c6447eb932ea7106fad7d8fd422b41fd7" },
+    { "path": "openspec/changes/task-failure-handling/specs/task-failure-handling/spec.md", "sha256": "5ffafcc78eeac3f94875284faf205ecb5f04b4bc5b875607a3d1617ceb0001d4" }
+  ]
+}

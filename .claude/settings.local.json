@@ -2,7 +2,12 @@
   "permissions": {
     "allow": [
       "Bash(node .claude/skills/comet-classic/scripts/workflow-state.mjs record open \"intake-summary: User wants to enhance the audio preprocessing module with noise reduction and effective segment extraction before voiceprint recognition, aiming to minimize LLM token usage by processing only valid speech segments. completedChecks: comet-state-created\")",
-      "Bash(node .claude/skills/comet-classic/scripts/workflow-state.mjs status)"
+      "Bash(node .claude/skills/comet-classic/scripts/workflow-state.mjs status)",
+      "Bash(.venv/Scripts/python.exe -c \"p='scripts/start.bat'; b=open\\(p,'rb'\\).read\\(\\).replace\\(b'\\\\n', b'\\\\r\\\\n'\\); open\\(p,'wb'\\).write\\(b\\); print\\('CRLF done, bytes:', len\\(b\\)\\)\")",
+      "Bash(uv run *)",
+      "Bash(cmd //c start.bat --no-browser)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" --max-time 3 http://127.0.0.1:8000/)",
+      "Bash(powershell -NoProfile -Command '\\(Get-CimInstance Win32_Process -Filter \"Name='\\\\''python.exe'\\\\''\" | Where-Object { $_.CommandLine -match '\\\\''src.cli \\(web|watch\\)'\\\\'' }\\).Count')"
     ]
   },
   "hooks": {
