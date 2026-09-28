@@ -6,7 +6,7 @@ import logging
 from pathlib import Path
 from typing import Any
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
@@ -55,5 +55,10 @@ def create_app(config: dict[str, Any] | None = None) -> FastAPI:
     @app.get("/")
     def index() -> FileResponse:
         return FileResponse(static_dir / "index.html")
+
+    # 浏览器会自动请求站点图标；返回空响应，避免日志出现 404 噪音
+    @app.get("/favicon.ico", include_in_schema=False)
+    def favicon() -> Response:
+        return Response(status_code=204)
 
     return app

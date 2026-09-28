@@ -14,6 +14,7 @@
 
 ## 已完成
 
+- [x] 消除 `/favicon.ico` 404 日志噪音：`src/web/main.py` 新增路由返回 204，新增 `test_favicon`
 - [x] 修复 `scripts/start.bat` 双击报错（`scripts\scripts\launcher.py`）：中文注释改 ASCII + CRLF + 绝对路径 `%~dp0launcher.py`，新增 `TestStartBat` 防回归测试与 `.gitattributes`
 - [x] 一键启动器：`scripts/launcher.py`（解耦、纯标准库、子进程拉起 web+watch+浏览器）+ `scripts/start.bat` 双击入口；12 个单元测试 + 实际启动/Ctrl+C 回收/start.bat 冒烟全部通过
 - [x] 前端依赖本地化：Vue / Element Plus / Alpine 下载到 `src/web/static/vendor/`，移除 unpkg / jsdelivr CDN 引用

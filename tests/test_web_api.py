@@ -38,6 +38,11 @@ def test_static_files(client: TestClient) -> None:
     assert client.get("/static/prototype/vue/index.html").status_code == 200
 
 
+def test_favicon(client: TestClient) -> None:
+    """favicon 请求返回 204，避免浏览器自动请求产生 404 日志噪音."""
+    assert client.get("/favicon.ico").status_code == 204
+
+
 def test_list_recordings_empty(client: TestClient) -> None:
     """空数据库返回空列表."""
     response = client.get("/api/recordings")

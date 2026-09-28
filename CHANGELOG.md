@@ -13,6 +13,7 @@
 
 ### 修复
 
+- 浏览器自动请求 `/favicon.ico` 返回 404 的日志噪音：`src/web/main.py` 新增 `/favicon.ico` 路由返回 204 No Content（`include_in_schema=False`）。
 - `scripts/start.bat` 双击报错 `scripts\scripts\launcher.py`：移除批处理内 UTF-8 中文注释（cmd 按 GBK 解析导致字节错位、`cd` 失效），改为英文 ASCII 注释 + CRLF 换行 + 绝对路径 `%~dp0launcher.py` 双保险；新增 `.gitattributes`（`*.bat eol=crlf`）与 `TestStartBat` 防回归测试。
 
 - 浏览器版 Web UI Demo：基于 FastAPI + SSE 提供后端 API，前端同时实现 4 套原型（原生 HTML+JS、Vue 3 CDN、Alpine.js CDN、Vue 3 + Element Plus CDN），支持目录扫描、音频分析、ASR 文本/说话人标签修正、ISE 评测结果展示与键盘快捷键。
