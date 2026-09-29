@@ -9,10 +9,17 @@
 
 ### 新增
 
-- 一键启动器：新增 `scripts/launcher.py`（纯标准库，与前后端解耦，仅通过子进程调用现有 CLI）与双击入口 `scripts/start.bat`，一键拉起 Web 服务（含前端）+ 目录监控 watch，服务就绪后自动打开浏览器；支持 `--host/--port/--no-web/--no-watch/--no-browser`，Ctrl+C 优雅回收全部子进程，端口占用预检并友好报错。
+- 阶段级自动重试：分析流水线各阶段失败后自动重试（句子切分 1 次，声纹分离 / 语音转写 2 次，指数退避 2s→4s），每次尝试的起止与错误完整写入 `run_history`；耗尽后仍按失败收尾并记录失败阶段。由于 `_last_completed_status` 只认 `completed`，重试不破坏断点续跑。
+- 单句评测失败记录：`evaluations` 表新增 `status` / `error_message` 列（启动时幂等迁移）。ISE 单句失败改为落库而非静默跳过，失败行不计入已评测集合，因此再次评测会自动只重跑失败句；评测完成消息提示「N/M 句未评上」，编辑页对失败句显示失败占位与原因。
+- 失败可视化：历史列表失败行高亮，失败原因带失败阶段（如「语音转写阶段失败：…」），并提供「继续分析」续跑引导。
+- 新增一次性修复脚本 `scripts/fix_misjudged_manual_asr.py`：还原「内容未变却被标记为人工修正」的 ASR 行，默认只预览，`--apply` 才写入。
 
 ### 修复
 
+- 录音状态误判为 `failed`：`_FINAL_STATUSES` 漏了 `transcribed` / `corrected`，导致**每次服务重启**都把「分析已完成但未评测」的录音标记为失败。现补入这两个状态——它们是分析流水线的正常终点，评测只是可选的后续动作。
+- 试听被误判为人工修正：Vue / Element / Alpine 三套原型页的文本框在失焦时无条件提交，试听时点一下文本框就会写入 `is_manual=1`，进而把录音状态误判为 `corrected`。现三套页面均增加「内容未变不提交」守卫，对齐原生页行为。
+- SSE 进度推送失效：服务端推送的是命名事件 `event: update`，前端却只用 `es.onmessage`（按 SSE 协议仅接收无 `event` 字段的默认消息），导致进度**永远收不到**，且流正常结束时误报「SSE 连接错误」。现改为监听 `update`，业务错误改用 `job_error` 事件与浏览器网络层错误区分，并仅在「从未收到任何事件且连接已关闭」时才报连接错误。
+- 失败原因残留：`update_recording_status` 在状态成功推进时一并清空 `failed_reason`（该字段只由 `mark_recording_failed` 写入）；启动迁移顺带修复存量脏数据——状态不为 `failed` 却残留失败原因的录音会被清空。
 - 浏览器自动请求 `/favicon.ico` 返回 404 的日志噪音：`src/web/main.py` 新增 `/favicon.ico` 路由返回 204 No Content（`include_in_schema=False`）。
 - `scripts/start.bat` 双击报错 `scripts\scripts\launcher.py`：移除批处理内 UTF-8 中文注释（cmd 按 GBK 解析导致字节错位、`cd` 失效），改为英文 ASCII 注释 + CRLF 换行 + 绝对路径 `%~dp0launcher.py` 双保险；新增 `.gitattributes`（`*.bat eol=crlf`）与 `TestStartBat` 防回归测试。
 
@@ -29,6 +36,8 @@
 
 ### 变更
 
+- 状态文案：`failed` 由「处理中断」改为「处理失败」，与真实失败原因（服务重启、阶段报错）区分。
+- 历史列表与编辑页的「继续分析」按钮补充说明：将从最近完成的阶段继续，不会重跑已完成的阶段。
 - `config.yaml` 默认 `iflytek.mode: llm`、`language: autodialect`（中英+方言自动识别）；`evaluation.mode` 默认 `ise`（`model_code: xdeepseekv31` 为 voice_insight 备选）。
 - `.env.example` 补充说明：app_id / api_key / api_secret 三者复用同一套凭证，服务器靠不同 host+path 区分服务。
 - 数据库目录规范为 `data/db/`；SQLite schema 新增 `run_history` 表、`recordings` 表新增 `created_at`/`run_count`/`failed_reason` 字段、`asr_results` 表新增 `is_manual` 字段（旧库启动时自动幂等迁移）。
