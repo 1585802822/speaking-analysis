@@ -124,11 +124,16 @@ def get_job(job_id: str, request: Request) -> dict[str, Any]:
 
 
 async def _sse_stream(job_store: JobStore, job_id: str) -> Any:
-    """SSE 进度流生成器：每 0.5s 推送一次完整任务快照，终态后断开."""
+    """SSE 进度流生成器：每 0.5s 推送一次完整任务快照，终态后断开.
+
+    事件名与浏览器的传输层错误刻意区分：进度用 ``update``，
+    业务错误（任务不存在）用 ``job_error``——若沿用 ``error``，
+    会与 EventSource 原生的错误回调同名，前端无法分辨是业务错误还是断线。
+    """
     while True:
         job = job_store.get(job_id)
         if job is None:
-            yield 'event: error\ndata: {"detail": "任务不存在"}\n\n'
+            yield 'event: job_error\ndata: {"detail": "任务不存在或已丢失"}\n\n'
             break
 
         data = json.dumps(job.__dict__, ensure_ascii=False, default=str)
