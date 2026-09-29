@@ -92,6 +92,7 @@ Alpine.data("editApp", () => ({
   recordingId: "",
   recording: null,
   segments: [],
+  savedTexts: {},
   evaluations: [],
   evaluating: false,
   evalProgress: { show: false, message: "", percent: 0 },
@@ -110,6 +111,11 @@ Alpine.data("editApp", () => ({
       apiGet(`/api/recordings/${this.recordingId}`),
     ]);
     this.segments = txData.segments || [];
+    // 记录各片段最近一次已保存的文本：内容未变则不发请求
+    this.savedTexts = {};
+    for (const seg of this.segments) {
+      this.savedTexts[seg.segment_index] = seg.text || "";
+    }
     this.recording = rec;
   },
   audioUrl(segmentIndex) {
@@ -123,8 +129,12 @@ Alpine.data("editApp", () => ({
     }
   },
   async saveText(seg) {
+    const text = seg.text || "";
+    // 内容未变则不发请求：否则试听时点一下文本框就会被记为人工修正
+    if (text === (this.savedTexts[seg.segment_index] ?? "")) return;
     try {
-      await updateText(this.recordingId, seg.segment_index, seg.text || "");
+      await updateText(this.recordingId, seg.segment_index, text);
+      this.savedTexts[seg.segment_index] = text;
     } catch (e) {
       alert(e.message);
     }
