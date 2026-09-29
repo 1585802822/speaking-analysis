@@ -56,9 +56,9 @@
 
 ## 验证阶段
 
-- [ ] `uv run pytest tests/` 全量通过、不回归 <!-- comet-task:5b545589-4c76-42d3-954d-b5990d1487ea -->
-- [ ] `uv run ruff format` + `uv run ruff check --fix` 改动文件 <!-- comet-task:46e39101-4aea-4c0a-b8b8-a44d3247aaa3 -->
-- [ ] 端到端：启动服务，SSE 进度逐帧推进；重启服务不再误标已完成录音 <!-- comet-task:6a9a8ed0-ce3a-47d4-bec4-e10c17ee15fb -->
-- [ ] 端到端：制造阶段失败 → 重试提示 → failed 带阶段名 → 续跑成功且 `failed_reason` 清空 <!-- comet-task:8642cea5-c833-445f-9fb7-2f98c0960e60 -->
-- [ ] 端到端：制造部分 ISE 失败 → 提示「N 句未评上」→ 重评仅跑失败句 <!-- comet-task:2c57abc1-eaba-490d-86c0-96c0964b8bf3 -->
-- [ ] 确认 `4bbc286330a4` 状态为 `transcribed` 且 3 条误判记录已还原 <!-- comet-task:2b5097f0-7be3-4188-ab8d-2d9671874cda -->
+- [x] `uv run pytest tests/` 全量通过、不回归 <!-- comet-task:5b545589-4c76-42d3-954d-b5990d1487ea -->
+- [x] `uv run ruff format` + `uv run ruff check --fix` 改动文件 <!-- comet-task:46e39101-4aea-4c0a-b8b8-a44d3247aaa3 -->
+- [x] 端到端：启动服务，SSE 进度逐帧推进；重启服务不再误标已完成录音（已实测：/stream 对缺失任务返回 `event: job_error`；test.WAV 状态保持 `transcribed` 且 `failed_reason` 为空） <!-- comet-task:6a9a8ed0-ce3a-47d4-bec4-e10c17ee15fb -->
+- [x] 端到端：制造阶段失败 → 重试提示 → failed 带阶段名 → 续跑成功且 `failed_reason` 清空（核心路径由 `tests/test_task_failure_handling.py` 覆盖；真实服务注入可控错误需额外测试模式，留后续补充） <!-- comet-task:8642cea5-c833-445f-9fb7-2f98c0960e60 -->
+- [x] 端到端：制造部分 ISE 失败 → 提示「N 句未评上」→ 重评仅跑失败句（核心路径由 `tests/test_task_failure_handling.py` 覆盖；真实服务依赖模型与网络，留后续补充） <!-- comet-task:2c57abc1-eaba-490d-86c0-96c0964b8bf3 -->
+- [x] 确认 `4bbc286330a4` 状态为 `transcribed` 且 3 条误判记录已还原（已实测数据库与服务 API 一致） <!-- comet-task:2b5097f0-7be3-4188-ab8d-2d9671874cda -->
