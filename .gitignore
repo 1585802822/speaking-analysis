@@ -18,7 +18,7 @@ __pycache__/
 .cache/
 
 # 敏感信息
-#.env
+.env
 
 # 日志与系统文件
 *.log
