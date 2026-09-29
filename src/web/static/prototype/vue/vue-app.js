@@ -115,6 +115,8 @@ function useEdit() {
   const evaluations = ref([]);
   const evaluating = ref(false);
   const evalProgress = ref({ show: false, message: "", percent: 0 });
+  // 各片段最近一次已保存的文本：内容未变则不发请求
+  const savedTexts = new Map();
 
   async function load() {
     if (!recordingId) return;
@@ -123,6 +125,10 @@ function useEdit() {
       apiGet(`/api/recordings/${recordingId}`),
     ]);
     segments.value = txData.segments || [];
+    savedTexts.clear();
+    for (const seg of segments.value) {
+      savedTexts.set(seg.segment_index, seg.text || "");
+    }
     recording.value = rec;
   }
 
@@ -139,8 +145,12 @@ function useEdit() {
   }
 
   async function saveText(seg) {
+    const text = seg.text || "";
+    // 内容未变则不发请求：否则试听时点一下文本框就会被记为人工修正
+    if (text === (savedTexts.get(seg.segment_index) ?? "")) return;
     try {
-      await updateText(recordingId, seg.segment_index, seg.text || "");
+      await updateText(recordingId, seg.segment_index, text);
+      savedTexts.set(seg.segment_index, text);
     } catch (e) {
       alert(e.message);
     }

@@ -99,6 +99,25 @@ td .failed-reason {
   max-width: 260px;
 }
 
+/* 失败提示下的续跑引导 */
+.failed-hint {
+  display: block;
+  color: var(--muted, #666);
+  font-size: 12px;
+  margin-top: 2px;
+}
+
+/* 历史列表中失败的录音整行高亮 */
+tr.row-failed {
+  background: rgba(220, 53, 69, 0.06);
+}
+
+/* 单句评测失败占位 */
+.eval-failed {
+  color: var(--danger, #dc3545);
+  font-size: 12px;
+}
+
 input[type="text"],
 input[type="number"],
 select,

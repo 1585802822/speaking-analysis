@@ -277,15 +277,25 @@ def test_run_history(client: TestClient, tmp_path: Path) -> None:
 
 
 def test_recover_interrupted_recordings(client: TestClient, tmp_path: Path) -> None:
-    """服务重启后非终态录音被标记为 failed，终态不受影响."""
+    """服务重启只标记真正中断的录音；分析已完成（transcribed/corrected）的不受影响.
+
+    回归点：transcribed / corrected 是分析流水线的正常终点，
+    评测是可选的后续动作，重启不得把它们误标为 failed。
+    """
     from src.web.service import recover_interrupted_recordings
 
     config = client.app.state.config
     db = Database(config["db_path"])
-    db.save_recording("r1", "/tmp/a.wav", 10.0, 16000, "transcribed")
-    db.save_recording("r2", "/tmp/b.wav", 10.0, 16000, "evaluated")
+    db.save_recording("r1", "/tmp/a.wav", 10.0, 16000, "segmented")  # 处理中被打断
+    db.save_recording("r2", "/tmp/b.wav", 10.0, 16000, "diarized")  # 处理中被打断
+    db.save_recording("r3", "/tmp/c.wav", 10.0, 16000, "transcribed")  # 分析已完成
+    db.save_recording("r4", "/tmp/d.wav", 10.0, 16000, "corrected")  # 已人工校正
+    db.save_recording("r5", "/tmp/e.wav", 10.0, 16000, "evaluated")  # 全部完成
 
     affected = recover_interrupted_recordings(db)
-    assert affected == ["r1"]
+    assert sorted(affected) == ["r1", "r2"]
     assert db.get_recording("r1")["status"] == "failed"
-    assert db.get_recording("r2")["status"] == "evaluated"
+    assert db.get_recording("r2")["status"] == "failed"
+    assert db.get_recording("r3")["status"] == "transcribed"
+    assert db.get_recording("r4")["status"] == "corrected"
+    assert db.get_recording("r5")["status"] == "evaluated"

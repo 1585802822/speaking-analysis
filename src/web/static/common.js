@@ -71,7 +71,7 @@ export function statusText(status) {
     transcribed: "已转写",
     corrected: "待校对",
     evaluated: "已评测",
-    failed: "处理中断",
+    failed: "处理失败",
   };
   return map[status] || status;
 }
@@ -98,25 +98,36 @@ export function createAudioPlayer(recordingId, segmentIndex) {
 
 export function listenJobSSE(jobId, onUpdate) {
   const es = new EventSource(`/api/jobs/${jobId}/stream`);
-  let received = false;
-  es.onmessage = (e) => {
-    received = true;
+  // 是否已收到过任何事件；用于区分「连接从未建立」与「流正常结束」
+  let settled = false;
+
+  // 服务端以命名事件推送：进度用 update，业务错误用 job_error。
+  // 注意不能用 es.onmessage —— 它只接收没有 event 字段的默认 message 事件。
+  es.addEventListener("update", (e) => {
+    settled = true;
     const data = JSON.parse(e.data);
     onUpdate(data);
     if (["completed", "failed"].includes(data.status)) {
+      // 服务端推完终态即断流，必须主动关闭，否则浏览器会无限自动重连
       es.close();
     }
-  };
-  // 服务端明确告知任务不存在（如服务重启后内存任务丢失）
-  es.addEventListener("error", () => {
-    es.close();
-    onUpdate({ status: "failed", message: "任务不存在或已丢失（服务可能已重启）", progress: 0 });
   });
+
+  // 服务端明确告知任务不存在（如服务重启后内存任务丢失）
+  es.addEventListener("job_error", (e) => {
+    settled = true;
+    let detail = "任务不存在或已丢失（服务可能已重启）";
+    try {
+      detail = JSON.parse(e.data).detail || detail;
+    } catch {}
+    es.close();
+    onUpdate({ status: "failed", message: detail, progress: 0 });
+  });
+
+  // 传输层错误：EventSource 默认会自动重连，不能一律当作失败；
+  // 只有从未收到任何事件、且连接已关闭，才说明连接建立失败
   es.onerror = () => {
-    // 已收到过消息的连接断开是流正常结束，忽略即可；
-    // 从未收到消息才说明连接建立失败
-    if (!received) {
-      es.close();
+    if (!settled && es.readyState === EventSource.CLOSED) {
       onUpdate({ status: "failed", message: "SSE 连接错误", progress: 0 });
     }
   };
@@ -150,6 +161,9 @@ export async function renderHistoryList(container, linkPrefix) {
   const tbody = table.querySelector("tbody");
   for (const rec of data.recordings) {
     const tr = document.createElement("tr");
+    if (rec.status === "failed") {
+      tr.className = "row-failed";
+    }
     tr.innerHTML = `
       <td>${rec.id}</td>
       <td title="${rec.original_path}">${basename(rec.original_path)}</td>
@@ -162,7 +176,10 @@ export async function renderHistoryList(container, linkPrefix) {
     if (canContinueAnalysis(rec.status)) {
       const btn = document.createElement("button");
       btn.className = "btn btn-primary";
-      btn.title = "从上次中断处继续未完成的阶段";
+      btn.title =
+        rec.status === "failed"
+          ? "从最近完成的阶段继续处理（不会重跑已完成的阶段）"
+          : "从上次中断处继续未完成的阶段";
       btn.textContent = "继续分析";
       btn.addEventListener("click", () => {
         continueAnalysis(rec.id, (job) => {

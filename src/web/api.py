@@ -124,11 +124,16 @@ def get_job(job_id: str, request: Request) -> dict[str, Any]:
 
 
 async def _sse_stream(job_store: JobStore, job_id: str) -> Any:
-    """SSE 进度流生成器：每 0.5s 推送一次完整任务快照，终态后断开."""
+    """SSE 进度流生成器：每 0.5s 推送一次完整任务快照，终态后断开.
+
+    事件名与浏览器的传输层错误刻意区分：进度用 ``update``，
+    业务错误（任务不存在）用 ``job_error``——若沿用 ``error``，
+    会与 EventSource 原生的错误回调同名，前端无法分辨是业务错误还是断线。
+    """
     while True:
         job = job_store.get(job_id)
         if job is None:
-            yield 'event: error\ndata: {"detail": "任务不存在"}\n\n'
+            yield 'event: job_error\ndata: {"detail": "任务不存在或已丢失"}\n\n'
             break
 
         data = json.dumps(job.__dict__, ensure_ascii=False, default=str)
@@ -141,10 +146,12 @@ async def _sse_stream(job_store: JobStore, job_id: str) -> Any:
 
 @router.get("/jobs/{job_id}/stream")
 def stream_job(job_id: str, request: Request) -> StreamingResponse:
-    """通过 SSE 实时推送任务进度."""
+    """通过 SSE 实时推送任务进度.
+
+    即使任务不存在也不直接返回 404，而是进入流内推送 ``job_error`` 事件；
+    这样前端 EventSource 能收到业务错误，不会把连接失败误报为 SSE 连接错误。
+    """
     job_store = _job_store(request)
-    if job_store.get(job_id) is None:
-        raise HTTPException(status_code=404, detail="任务不存在")
     return StreamingResponse(
         _sse_stream(job_store, job_id),
         media_type="text/event-stream",
