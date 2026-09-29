@@ -35,3 +35,6 @@ tmp/spkrec-ecapa-voxceleb/
 
 # Git 备份目录
 .git.bak.*/
+
+# 个人文件
+.kimi-code/
