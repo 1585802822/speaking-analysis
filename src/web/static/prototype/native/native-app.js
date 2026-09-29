@@ -84,7 +84,11 @@ function initEditPage() {
     renderSegments();
     recording = await (await fetch(`/api/recordings/${recordingId}`)).json();
     const failedNote = recording.failed_reason
-      ? `<div class="failed-reason">${recording.failed_reason}</div>`
+      ? `<div class="failed-reason">${recording.failed_reason}${
+          canContinueAnalysis(recording.status)
+            ? `<div class="failed-hint">可点击上方「继续分析」从最近完成的阶段继续处理。</div>`
+            : ""
+        }</div>`
       : "";
     info.innerHTML = `
       <strong>${recordingId}</strong> · 状态：${statusText(recording.status)} · 时长：${formatTime(recording.duration_sec)}
@@ -172,6 +176,9 @@ function initEditPage() {
           const score = findings.find((f) => f.kind === "ise_score");
           const phones = findings.filter((f) => f.kind === "ise_phone");
           let html = "<div class='eval-panel'>";
+          if (ev.status === "failed") {
+            html += `<div class="eval-failed">该句评测失败：${ev.error_message || "未知原因"}</div>`;
+          }
           if (score) {
             html += `
               <div>

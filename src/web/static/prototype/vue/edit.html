@@ -17,7 +17,8 @@
     <div class="card">
       <p v-if="recording">
         <strong>{{ recordingId }}</strong> · 状态：{{ statusText(recording.status) }} · 时长：{{ formatTime(recording.duration_sec) }}
-        <span v-if="recording.failed_reason" class="failed-reason">{{ recording.failed_reason }}</span>
+        <span v-if="recording.failed_reason" class="failed-reason">{{ recording.failed_reason }}<span
+          v-if="canContinue" class="failed-hint">可点击下方「继续分析」从最近完成的阶段继续处理。</span></span>
       </p>
       <div class="btn-row">
         <button v-if="canContinue" class="btn btn-primary" @click="runContinue" :disabled="evaluating" title="从上次中断处继续未完成的阶段">继续分析</button>
@@ -62,6 +63,9 @@
           </div>
           <div class="segment-eval" v-if="evalFor(seg.segment_index).length">
             <div class="eval-panel" v-for="ev in evalFor(seg.segment_index)" :key="ev.id">
+              <div class="eval-failed" v-if="ev.status === 'failed'">
+                该句评测失败：{{ ev.error_message || '未知原因' }}
+              </div>
               <div v-if="scoreFor(ev)">
                 <span class="eval-score">总分 {{ scoreFor(ev).overall_score?.toFixed(1) || '-' }}</span>
                 <span class="eval-score">准确度 {{ scoreFor(ev).accuracy_score?.toFixed(1) || '-' }}</span>

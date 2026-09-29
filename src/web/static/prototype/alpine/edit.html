@@ -20,6 +20,7 @@
         <span x-text="statusText(recording.status)"></span> · 时长：
         <span x-text="formatTime(recording.duration_sec)"></span>
         <span class="failed-reason" x-show="recording.failed_reason" x-text="recording.failed_reason"></span>
+        <span class="failed-hint" x-show="recording.failed_reason && canContinue()">可点击下方「继续分析」从最近完成的阶段继续处理。</span>
       </p>
       <div class="btn-row">
         <button class="btn btn-primary" x-show="canContinue()" @click="runContinue()" :disabled="evaluating" title="从上次中断处继续未完成的阶段">继续分析</button>
@@ -66,6 +67,8 @@
               <div class="segment-eval" x-show="evalFor(seg.segment_index).length">
                 <template x-for="ev in evalFor(seg.segment_index)" :key="ev.id">
                   <div class="eval-panel">
+                    <div class="eval-failed" x-show="ev.status === 'failed'"
+                      x-text="'该句评测失败：' + (ev.error_message || '未知原因')"></div>
                     <div x-show="scoreFor(ev)">
                       <span class="eval-score">总分 <span x-text="scoreFor(ev).overall_score?.toFixed(1) || '-'"></span></span>
                       <span class="eval-score">准确度 <span x-text="scoreFor(ev).accuracy_score?.toFixed(1) || '-'"></span></span>
