@@ -58,6 +58,16 @@ class Database:
         _add_column("recordings", "run_count", "run_count INTEGER DEFAULT 0")
         _add_column("recordings", "failed_reason", "failed_reason TEXT")
         _add_column("asr_results", "is_manual", "is_manual INTEGER DEFAULT 0")
+        _add_column("evaluations", "status", "status TEXT DEFAULT 'success'")
+        _add_column("evaluations", "error_message", "error_message TEXT")
+
+        # 数据修复：失败原因只在失败时写入，非 failed 状态不应残留历史失败原因
+        conn.execute(
+            """
+            UPDATE recordings SET failed_reason = NULL
+            WHERE status != 'failed' AND failed_reason IS NOT NULL
+            """
+        )
 
     # ------------------------------------------------------------------
     # recordings
@@ -126,10 +136,18 @@ class Database:
             return [dict(row) for row in rows]
 
     def update_recording_status(self, recording_id: str, status: str) -> None:
-        """更新录音处理状态."""
+        """更新录音处理状态.
+
+        任何状态推进都视为已从失败中恢复，因此一并清空 failed_reason；
+        该字段只在 mark_recording_failed 中写入。
+        """
         with self._connect() as conn:
             conn.execute(
-                "UPDATE recordings SET status = ?, processed_at = ? WHERE id = ?",
+                """
+                UPDATE recordings
+                SET status = ?, failed_reason = NULL, processed_at = ?
+                WHERE id = ?
+                """,
                 (status, _utc_now(), recording_id),
             )
 
@@ -610,9 +628,20 @@ class Database:
     # evaluations
     # ------------------------------------------------------------------
     def save_evaluation(
-        self, recording_id: str, segment_index: int, eval_type: str, result: dict[str, Any]
+        self,
+        recording_id: str,
+        segment_index: int,
+        eval_type: str,
+        result: dict[str, Any],
+        status: str = "success",
+        error_message: str | None = None,
     ) -> bool:
-        """保存某片段的评测结果."""
+        """保存某片段的评测结果.
+
+        Args:
+            status: ``success`` 或 ``failed``；失败行不计入已评测集合，可被重跑覆盖。
+            error_message: 失败原因，仅在 ``status="failed"`` 时有意义。
+        """
         db_seg = self.get_segment_by_index(recording_id, segment_index)
         if db_seg is None:
             return False
@@ -622,13 +651,15 @@ class Database:
             conn.execute(
                 """
                 INSERT INTO evaluations
-                    (segment_id, eval_type, result_json, created_at)
-                VALUES (?, ?, ?, ?)
+                    (segment_id, eval_type, result_json, status, error_message, created_at)
+                VALUES (?, ?, ?, ?, ?, ?)
                 ON CONFLICT(segment_id, eval_type) DO UPDATE SET
                     result_json=excluded.result_json,
+                    status=excluded.status,
+                    error_message=excluded.error_message,
                     created_at=excluded.created_at
                 """,
-                (segment_id, eval_type, result_json, _utc_now()),
+                (segment_id, eval_type, result_json, status, error_message, _utc_now()),
             )
         return True
 
@@ -656,13 +687,18 @@ class Database:
             return results
 
     def get_evaluated_segment_indexes(self, recording_id: str, eval_type: str = "ise") -> set[int]:
-        """返回该录音已评测的 segment_index 集合（用于续跑时跳过）."""
+        """返回该录音已评测的 segment_index 集合（用于续跑时跳过）.
+
+        只统计成功的评测行；失败行留待下次评测重跑。
+        旧数据没有 status 列，按成功兼容。
+        """
         with self._connect() as conn:
             rows = conn.execute(
                 """
                 SELECT s.segment_index FROM evaluations e
                 JOIN segments s ON e.segment_id = s.id
                 WHERE s.recording_id = ? AND e.eval_type = ?
+                  AND (e.status IS NULL OR e.status = 'success')
                 """,
                 (recording_id, eval_type),
             ).fetchall()

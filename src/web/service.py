@@ -13,8 +13,9 @@
 from __future__ import annotations
 
 import logging
+import time
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 from ..audio_adapter import IFLYTEK_MAX_DURATION_SEC, IFLYTEK_MAX_FILE_SIZE_MB, validate_input
 from ..db import Database
@@ -49,7 +50,20 @@ _STAGE_TO_STATUS = {
 }
 
 # 终态集合：处于这些状态时不视为“处理中断”
-_FINAL_STATUSES = (None, "new", "evaluated", "failed")
+# transcribed / corrected 是分析阶段的正常终点（评测是可选动作），
+# 否则每次服务重启都会把已完成分析的录音误标为 failed
+_FINAL_STATUSES = (None, "new", "transcribed", "corrected", "evaluated", "failed")
+
+# 阶段名 → 中文标签，用于失败原因与进度提示
+_STAGE_LABEL = {
+    "segment": "句子切分",
+    "diarize": "声纹分离",
+    "asr": "语音转写",
+    "evaluate": "发音评测",
+}
+
+# 重试退避基数（秒）；模块级常量便于测试时 patch 为 0
+_RETRY_BASE_DELAY = 2.0
 
 
 def _stage_rank(status: str | None) -> int:
@@ -90,6 +104,54 @@ def _resume_status(db: Database, recording_id: str, status: str | None) -> str |
     if status == "failed":
         return _last_completed_status(db, recording_id)
     return status
+
+
+def _run_stage_with_retry(
+    db: Database,
+    recording_id: str,
+    stage: str,
+    job_store: JobStore,
+    job_id: str,
+    fn: Callable[[], None],
+    max_retries: int,
+) -> None:
+    """执行单个阶段，失败按指数退避重试；每次尝试都写 run_history.
+
+    Args:
+        fn: 阶段主体，无参闭包（数据库句柄等由闭包捕获）。
+        max_retries: 首次尝试之外的额外重试次数；耗尽后把最后一次异常抛出，
+            交由 run_analysis 的顶层 except 收尾。
+
+    说明：重试轨迹完整写入 run_history（每次 started/failed），
+    而 _last_completed_status 只认 completed，因此断点续跑不受影响。
+    """
+    delay = _RETRY_BASE_DELAY
+    for attempt in range(max_retries + 1):
+        db.save_run_history(recording_id, stage, "started")
+        try:
+            fn()
+        except Exception as exc:
+            db.save_run_history(
+                recording_id,
+                stage,
+                "failed",
+                error_message=f"第 {attempt + 1} 次尝试: {exc}",
+            )
+            if attempt >= max_retries:
+                raise
+            label = _STAGE_LABEL.get(stage, stage)
+            logger.warning(
+                "阶段 %s 第 %d 次失败，%.0f 秒后重试: %s", stage, attempt + 1, delay, exc
+            )
+            job_store.update(
+                job_id,
+                message=f"{label}失败，{delay:.0f} 秒后重试（{attempt + 1}/{max_retries}）...",
+            )
+            time.sleep(delay)
+            delay *= 2
+        else:
+            db.save_run_history(recording_id, stage, "completed")
+            return
 
 
 def run_analysis(
@@ -138,67 +200,81 @@ def run_analysis(
             max_file_size_mb=IFLYTEK_MAX_FILE_SIZE_MB,
         )
 
-        # 阶段 1：句子切分
+        # 阶段 1：句子切分（本地预处理，失败多为数据问题，只重试 1 次）
         if _stage_rank(status) < 1:
             current_stage = "segment"
-            db.save_run_history(recording_id, "segment", "started")
             job_store.update(job_id, message="正在切分句子...", progress=0.2)
-            segmenter = SentenceSegmenter(config)
-            preprocessor = Preprocessor(config)
-            duration_sec = preprocessor.get_duration(path)
-            segments, audio_paths, _meta = segmenter.segment(path, recording_id)
-            db.save_recording(
-                recording_id,
-                str(path),
-                duration_sec,
-                segmenter.sample_rate,
-                "segmented",
+
+            def _do_segment() -> None:
+                nonlocal segments
+                segmenter = SentenceSegmenter(config)
+                preprocessor = Preprocessor(config)
+                duration_sec = preprocessor.get_duration(path)
+                segments, audio_paths, _meta = segmenter.segment(path, recording_id)
+                db.save_recording(
+                    recording_id,
+                    str(path),
+                    duration_sec,
+                    segmenter.sample_rate,
+                    "segmented",
+                )
+                db.save_segments(recording_id, segments, audio_paths)
+                db.cleanup_orphan_segments(
+                    recording_id,
+                    [s.segment_index for s in segments if s.segment_index is not None],
+                )
+
+            _run_stage_with_retry(
+                db, recording_id, "segment", job_store, job_id, _do_segment, max_retries=1
             )
-            db.save_segments(recording_id, segments, audio_paths)
-            db.cleanup_orphan_segments(
-                recording_id,
-                [s.segment_index for s in segments if s.segment_index is not None],
-            )
-            db.save_run_history(recording_id, "segment", "completed")
         else:
             job_store.update(job_id, message="已有切分结果，跳过切分...", progress=0.25)
             segments = _load_segments_from_db(db, recording_id)
 
-        # 阶段 2：声纹初次分离
+        # 阶段 2：声纹初次分离（涉及模型加载，重试 2 次）
         if _stage_rank(status) < 2:
             current_stage = "diarize"
-            db.save_run_history(recording_id, "diarize", "started")
             job_store.update(job_id, message="正在声纹分离...", progress=0.45)
-            enrollment = EnrollmentManager(config)
-            separator = SpeakerSeparator(config)
-            voiceprint = enrollment.load_voiceprint()
-            if voiceprint is None:
-                # 没有注册声纹时全部标记为 other，避免阻塞流程
-                for seg in segments:
-                    seg.speaker_label = "other"
-                    seg.is_user = False
-                    seg.speaker_confidence = 0.0
-                    seg.confidence = 0.0
-                    seg.needs_review = False
-                separator._save_diarization_json(recording_id, segments)
-                db.save_diarization(recording_id, segments)
-            else:
-                segments = separator.separate(segments, recording_id, voiceprint)
-            db.update_recording_status(recording_id, "diarized")
-            db.save_run_history(recording_id, "diarize", "completed")
+
+            def _do_diarize() -> None:
+                nonlocal segments
+                enrollment = EnrollmentManager(config)
+                separator = SpeakerSeparator(config)
+                voiceprint = enrollment.load_voiceprint()
+                if voiceprint is None:
+                    # 没有注册声纹时全部标记为 other，避免阻塞流程
+                    for seg in segments:
+                        seg.speaker_label = "other"
+                        seg.is_user = False
+                        seg.speaker_confidence = 0.0
+                        seg.confidence = 0.0
+                        seg.needs_review = False
+                    separator._save_diarization_json(recording_id, segments)
+                    db.save_diarization(recording_id, segments)
+                else:
+                    segments = separator.separate(segments, recording_id, voiceprint)
+                db.update_recording_status(recording_id, "diarized")
+
+            _run_stage_with_retry(
+                db, recording_id, "diarize", job_store, job_id, _do_diarize, max_retries=2
+            )
         else:
             job_store.update(job_id, message="已有分离结果，跳过声纹分离...", progress=0.5)
             segments = _load_segments_from_db(db, recording_id)
 
-        # 阶段 3：ASR 转写（人工修正过的文本受保护）
+        # 阶段 3：ASR 转写（人工修正过的文本受保护；涉及模型/外部 API，重试 2 次）
         if _stage_rank(status) < 3:
             current_stage = "asr"
-            db.save_run_history(recording_id, "asr", "started")
             job_store.update(job_id, message="正在转写...", progress=0.75)
-            transcriber = Transcriber(config)
-            transcriptions = transcriber.transcribe_segments(path, segments, recording_id)
-            db.save_asr_results(recording_id, transcriptions, protect_manual=not force)
-            db.save_run_history(recording_id, "asr", "completed")
+
+            def _do_asr() -> None:
+                transcriber = Transcriber(config)
+                transcriptions = transcriber.transcribe_segments(path, segments, recording_id)
+                db.save_asr_results(recording_id, transcriptions, protect_manual=not force)
+
+            _run_stage_with_retry(
+                db, recording_id, "asr", job_store, job_id, _do_asr, max_retries=2
+            )
         else:
             job_store.update(job_id, message="已有转写结果，跳过 ASR...", progress=0.9)
 
@@ -216,9 +292,11 @@ def run_analysis(
         )
     except Exception as exc:
         logger.exception("分析任务失败: %s", audio_path)
+        stage_label = _STAGE_LABEL.get(current_stage, current_stage)
+        reason = f"{stage_label}阶段失败：{exc}"
         if db is not None:
             try:
-                db.mark_recording_failed(recording_id, str(exc))
+                db.mark_recording_failed(recording_id, reason)
                 db.save_run_history(recording_id, current_stage, "failed", error_message=str(exc))
             except Exception as db_exc:  # pragma: no cover - 数据库异常不掩盖原始错误
                 logger.warning("写入失败状态时出错: %s", db_exc)
@@ -226,7 +304,7 @@ def run_analysis(
             job_id,
             "failed",
             error=str(exc),
-            message=f"分析失败: {exc}",
+            message=f"分析失败：{reason}",
         )
 
 
@@ -277,6 +355,7 @@ def run_evaluation(
         analyzer = PronunciationAnalyzer(config)
         audio_path = recording["original_path"]
         total = len(todo)
+        failed_indexes: list[int] = []
 
         for idx, row in enumerate(todo):
             progress = 0.1 + 0.8 * (idx + 1) / total
@@ -295,6 +374,16 @@ def run_evaluation(
                 result = analyzer.analyze([utterance], audio_path)
             except Exception as exc:  # 单句评测失败不影响后续句子
                 logger.warning("单句评测失败 [%s]: %s", row["segment_index"], exc)
+                # 落库失败行：不计入已评测集合，下次评测会自动重跑该句
+                db.save_evaluation(
+                    recording_id,
+                    row["segment_index"],
+                    "ise",
+                    {},
+                    status="failed",
+                    error_message=str(exc),
+                )
+                failed_indexes.append(row["segment_index"])
                 continue
             if result.findings:
                 db.save_evaluation(
@@ -306,17 +395,21 @@ def run_evaluation(
 
         db.update_recording_status(recording_id, "evaluated")
         db.save_run_history(recording_id, "evaluate", "completed")
+        if failed_indexes:
+            message = f"ISE 评测完成，{len(failed_indexes)}/{total} 句未评上，可重新评测重试失败句"
+        else:
+            message = "ISE 评测完成"
         job_store.set_finished(
             job_id,
             "completed",
             result={"recording_id": recording_id},
-            message="ISE 评测完成",
+            message=message,
         )
     except Exception as exc:
         logger.exception("ISE 评测失败: %s", recording_id)
         if db is not None:
             try:
-                db.mark_recording_failed(recording_id, str(exc))
+                db.mark_recording_failed(recording_id, f"{_STAGE_LABEL['evaluate']}阶段失败：{exc}")
                 db.save_run_history(recording_id, "evaluate", "failed", error_message=str(exc))
             except Exception as db_exc:  # pragma: no cover
                 logger.warning("写入失败状态时出错: %s", db_exc)

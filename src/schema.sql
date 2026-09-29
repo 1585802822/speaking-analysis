@@ -75,6 +75,8 @@ CREATE TABLE IF NOT EXISTS evaluations (
     segment_id INTEGER NOT NULL,
     eval_type TEXT,  -- 'ise' | 'vaa' 等
     result_json TEXT,
+    status TEXT DEFAULT 'success',  -- 'success' | 'failed'
+    error_message TEXT,
     created_at TEXT,
     FOREIGN KEY (segment_id) REFERENCES segments(id)
 );
