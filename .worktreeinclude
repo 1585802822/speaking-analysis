@@ -1,0 +1,5 @@
+# 依赖与环境
+.venv/
+__pycache__/
+*.egg-info/
+.cache/
