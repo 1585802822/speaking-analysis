@@ -146,10 +146,12 @@ async def _sse_stream(job_store: JobStore, job_id: str) -> Any:
 
 @router.get("/jobs/{job_id}/stream")
 def stream_job(job_id: str, request: Request) -> StreamingResponse:
-    """通过 SSE 实时推送任务进度."""
+    """通过 SSE 实时推送任务进度.
+
+    即使任务不存在也不直接返回 404，而是进入流内推送 ``job_error`` 事件；
+    这样前端 EventSource 能收到业务错误，不会把连接失败误报为 SSE 连接错误。
+    """
     job_store = _job_store(request)
-    if job_store.get(job_id) is None:
-        raise HTTPException(status_code=404, detail="任务不存在")
     return StreamingResponse(
         _sse_stream(job_store, job_id),
         media_type="text/event-stream",

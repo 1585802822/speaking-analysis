@@ -273,3 +273,16 @@ def test_sse_stream_endpoint_emits_named_update_event(client: Any) -> None:
     assert response.status_code == 200
     assert response.headers["content-type"].startswith("text/event-stream")
     assert "event: update" in response.text
+
+
+def test_sse_stream_endpoint_job_error_for_missing_job(client: Any) -> None:
+    """不存在的任务通过 SSE 推 job_error，而不是直接返回 HTTP 404.
+
+    这样浏览器 EventSource 能收到业务错误，不会把连接关闭误报为 SSE 连接错误。
+    """
+    response = client.get("/api/jobs/no-such-job/stream")
+
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith("text/event-stream")
+    assert "event: job_error" in response.text
+    assert "任务不存在" in response.text
