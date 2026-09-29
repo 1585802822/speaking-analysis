@@ -2,7 +2,8 @@
 comet_change: task-failure-handling
 role: technical-design
 canonical_spec: openspec
-status: draft
+archived-with: 2026-09-29-task-failure-handling
+status: final
 ---
 
 # 设计文档：任务失败处理与状态误判修复（task-failure-handling）

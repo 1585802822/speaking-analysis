@@ -11,7 +11,7 @@ isolation: branch
 verify_mode: null
 auto_transition: true
 base_ref: a6f9a7ed06f3c9764c6df4f03edf08225b6935b8
-design_doc: openspec/changes/task-failure-handling/design.md
+design_doc: openspec/changes/archive/2026-09-29-task-failure-handling/design.md
 plan: docs/superpowers/plans/task-failure-handling-plan.md
 verify_result: pass
 verify_failures: 0
@@ -19,13 +19,13 @@ verification_report: docs/superpowers/reports/task-failure-handling-verification
 branch_status: pending
 created_at: 2026-09-28
 verified_at: 2026-09-29
-archive_confirmation: pending
-archived: false
+archive_confirmation: confirmed
+archived: true
 bound_branch: comet/task-failure-handling
 direct_override: true
-handoff_context: openspec/changes/task-failure-handling/.comet/handoff/design-context.json
+handoff_context: openspec/changes/archive/2026-09-29-task-failure-handling/.comet/handoff/design-context.json
 handoff_hash: 717e13a8a7f9713027c3928f89353e8e2d84be74566c25946e422a251ca32351
 classic_profile: full
 classic_migration: 1
 run_id: 8ef11653-e05e-4b42-af1a-13ada932df4c
-check_epoch: 4
+check_epoch: 6
